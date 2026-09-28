@@ -64,24 +64,135 @@
   const trackDone = (t) => trackMods(t).reduce((n, m) => n + modDone(m), 0);
   const catCount = (c) => PROJECTS.filter((p) => p.category === c).length;
 
+  /* ---------------- Navigation helpers ---------------- */
+  // Breadcrumb trail: [[label, href], …]; the last item is the current page.
+  const crumbs = (items) => `<nav class="crumbs" aria-label="Breadcrumb">${items
+    .map(([t, h], i) => (i < items.length - 1 ? `<a href="${h}">${t}</a><span class="sep" aria-hidden="true">›</span>` : `<span aria-current="page">${t}</span>`))
+    .join("")}</nav>`;
+
+  // Course map: every branch → module → lesson, with the current one opened.
+  function courseMap(curMod, curLesson) {
+    return `<div class="map">${TRACKS.map((t) => {
+      const open = curMod && t.modules.includes(curMod.id);
+      return `<details class="map-branch" ${open ? "open" : ""}>
+        <summary><span>${t.title}</span><small>${trackDone(t)}/${trackLessons(t)}</small></summary>
+        ${trackMods(t).map((m) => `<details class="map-mod" ${m === curMod ? "open" : ""}>
+          <summary class="${quizPassed(m) ? "done" : ""}"><span class="chk"></span>${m.title}</summary>
+          <ol>${m.lessons.map((x) => `<li class="${m === curMod && x === curLesson ? "cur" : ""} ${state.lessons[m.id + "/" + x.id] ? "done" : ""}"><a href="#/learn/${m.id}/${x.id}"><span class="chk"></span>${x.title}</a></li>`).join("")}
+            <li class="${quizPassed(m) ? "done" : ""} ${m === curMod && curLesson === "quiz" ? "cur" : ""}"><a href="#/quiz/${m.id}"><span class="chk"></span>Module quiz</a></li></ol>
+        </details>`).join("")}
+      </details>`;
+    }).join("")}</div>`;
+  }
+
+  const mapAside = (m, l) => `
+  <aside class="side" id="side" aria-label="Course map">
+    <div class="side-head"><b>Course map</b><button class="icon-btn side-close" type="button" data-close-map aria-label="Close course map">×</button></div>
+    ${courseMap(m, l)}
+  </aside>`;
+
+  // Where to continue: the first unfinished lesson or quiz.
+  function nextInfo() {
+    for (const m of COURSE) {
+      const l = m.lessons.find((x) => !state.lessons[m.id + "/" + x.id]);
+      if (l) return { href: `#/learn/${m.id}/${l.id}`, title: l.title, sub: `${trackOf(m).title} › ${m.title}` };
+      if (!quizPassed(m)) return { href: `#/quiz/${m.id}`, title: "Module quiz", sub: `${trackOf(m).title} › ${m.title}` };
+    }
+    return { href: "#/certificate", title: "Get your certificate", sub: "You've finished every module" };
+  }
+
+  /* ---------------- Search ---------------- */
+  let SEARCH = null;
+  const plain = (html) => html.replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/gi, " ");
+  function buildIndex() {
+    SEARCH = [];
+    TRACKS.forEach((t) => SEARCH.push({ type: "Branch", title: t.title, sub: t.tagline, href: `#/track/${t.id}`, head: t.title, text: `${t.title} ${t.tagline} ${t.what}` }));
+    COURSE.forEach((m) => {
+      SEARCH.push({ type: "Module", title: m.title, sub: trackOf(m).title, href: `#/learn/${m.id}`, head: m.title, text: `${m.title} ${m.tagline}` });
+      m.lessons.forEach((l) => {
+        const rc = RECAPS[m.id + "/" + l.id];
+        SEARCH.push({ type: "Lesson", title: l.title, sub: `${trackOf(m).title} › ${m.title}`, href: `#/learn/${m.id}/${l.id}`, head: `${l.title} ${rc ? rc.idea : ""}`, text: `${l.title} ${rc ? rc.idea : ""} ${plain(l.body)}` });
+      });
+    });
+    PROJECTS.forEach((p) => SEARCH.push({ type: "Project", title: p.title, sub: `${CATEGORIES[p.category].name} · ${PLATFORMS[p.platform].short}`, href: `#/projects/${p.id}`, head: p.title, text: `${p.title} ${p.learn.join(" ")} ${p.parts.join(" ")} ${PLATFORMS[p.platform].name}` }));
+    GLOSSARY.forEach(([t, d]) => SEARCH.push({ type: "Term", title: t, sub: d, href: `#/glossary/${encodeURIComponent(t)}`, head: t, text: `${t} ${d}` }));
+    SEARCH.forEach((it) => { it.text = it.text.toLowerCase(); it.head = it.head.toLowerCase(); });
+  }
+  function runSearch(q) {
+    if (!SEARCH) buildIndex();
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return [];
+    const bonus = { Branch: 4, Module: 3, Term: 2, Lesson: 1, Project: 1 };
+    return SEARCH.map((it) => {
+      if (!words.every((w) => it.text.includes(w))) return null;
+      const score = words.reduce((s, w) => s + (it.head.includes(w) ? 10 : 0), 0) + bonus[it.type];
+      return [score, it];
+    }).filter(Boolean).sort((a, b) => b[0] - a[0]).slice(0, 10).map((x) => x[1]);
+  }
+  function wireSearch() {
+    const input = document.getElementById("q"), box = document.getElementById("q-res");
+    let items = [], sel = -1;
+    const close = () => { box.hidden = true; sel = -1; };
+    const paint = () => {
+      items = runSearch(input.value);
+      if (!input.value.trim()) return close();
+      box.hidden = false;
+      box.innerHTML = items.length
+        ? items.map((it, i) => `<a href="${it.href}" class="${i === sel ? "on" : ""}" role="option"><span class="rt">${it.type}</span><b>${it.title}</b><small>${it.sub}</small></a>`).join("")
+        : `<p class="none">No matches for “${H.esc(input.value)}”. Try a shorter word, like “filter” or “ESP32”.</p>`;
+    };
+    input.addEventListener("input", () => { sel = -1; paint(); });
+    input.addEventListener("focus", () => input.value.trim() && paint());
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown") { sel = Math.min(items.length - 1, sel + 1); paint(); e.preventDefault(); }
+      else if (e.key === "ArrowUp") { sel = Math.max(0, sel - 1); paint(); e.preventDefault(); }
+      else if (e.key === "Enter") { const it = items[sel < 0 ? 0 : sel]; if (it) { location.hash = it.href; input.value = ""; close(); input.blur(); } }
+      else if (e.key === "Escape") { close(); input.blur(); }
+    });
+    box.addEventListener("click", (e) => { if (e.target.closest("a")) { input.value = ""; close(); document.body.classList.remove("search-open"); } });
+    document.addEventListener("click", (e) => { if (!e.target.closest("#search-wrap") && !e.target.closest("#search-btn")) close(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "/" && !e.target.matches("input, textarea, select")) { e.preventDefault(); document.body.classList.add("search-open"); input.focus(); }
+    });
+    document.getElementById("search-btn").addEventListener("click", () => {
+      document.body.classList.toggle("search-open");
+      if (document.body.classList.contains("search-open")) input.focus();
+    });
+  }
+
+
   function home() {
     const started = doneLessons() > 0;
+    const nx = nextInfo();
     return `
 <div class="home">
   <section class="intro">
     <span class="eyebrow">A free electronics course</span>
     <h1>Learn electronics, from the electron to the industry.</h1>
-    <p>Never studied electronics? Start with the Foundations branch. Then explore analog, digital, embedded systems, VLSI, communication and power electronics, each from the basics to how it works in real companies.</p>
-    <div class="btn-row">
-      <a class="btn primary big" href="${started ? nextStop() : "#/track/foundations"}">${started ? "Continue learning" : "Start with Foundations"}</a>
-      <a class="btn ghost big" href="#/projects">Browse projects</a>
-    </div>
-    <div class="facts"><span><b>${TRACKS.length}</b> branches</span><span><b>${totalLessons}</b> lessons</span><span><b>${labCount}</b> simulators</span><span><b>${PROJECTS.length}</b> projects</span><span>Certificate at the end</span></div>
+    <p>Eight branches, each from the basics to how it works in real companies — with simulators, practice problems, 43 projects and a certificate.</p>
+    <div class="facts"><span><b>${TRACKS.length}</b> branches</span><span><b>${totalLessons}</b> lessons</span><span><b>${labCount}</b> simulators</span><span><b>${PROJECTS.length}</b> projects</span></div>
   </section>
 
+  ${started ? `
+  <a class="resume" href="${nx.href}">
+    <span class="eyebrow">Continue where you left off</span>
+    <b>${nx.title}</b>
+    <small>${nx.sub}</small>
+    <span class="resume-bar"><i style="width:${pct()}%"></i></span>
+    <small>${pct()}% of the course complete</small>
+  </a>` : `
+  <section class="start">
+    <h2>New to electronics? Start here</h2>
+    <ol class="start-steps">
+      <li><span>1</span><div><b><a href="#/track/foundations">Do the Foundations branch</a></b><p>13 short lessons: electrons, voltage, components and circuits. No background needed.</p></div></li>
+      <li><span>2</span><div><b><a href="#/learn">Pick a branch that interests you</a></b><p>Analog, digital, embedded, VLSI, communication or power — each builds on Foundations.</p></div></li>
+      <li><span>3</span><div><b><a href="#/projects">Build a project</a></b><p>Start with an Easy one in the Lab or Microcontroller category.</p></div></li>
+    </ol>
+    <a class="btn primary big" href="#/learn/basics/atoms">Start the first lesson</a>
+  </section>`}
+
   <section class="home-sec">
-    <header><h2>Branches of electronics</h2><a href="#/learn">See everything</a></header>
-    <p class="muted">Each branch goes from beginner to advanced, and ends with how that field works in industry.</p>
+    <header><h2>Branches of electronics</h2><a href="#/learn">All lessons</a></header>
     <div class="branch-grid">
       ${TRACKS.map((t, i) => branchCard(t, i)).join("")}
     </div>
@@ -91,15 +202,6 @@
     <header><h2>Projects</h2><a href="#/projects">All ${PROJECTS.length} projects</a></header>
     <div class="cat-grid">
       ${Object.entries(CATEGORIES).map(([k, c]) => `<a class="cat-card" href="#/projects/type/${k}"><b>${c.name}</b><span class="n">${catCount(k)} projects</span><span>${c.desc}</span></a>`).join("")}
-    </div>
-  </section>
-
-  <section class="home-sec">
-    <header><h2>How the lessons work</h2></header>
-    <div class="how">
-      <div><h3>The idea first</h3><p>Each lesson starts with one sentence to remember, then explains it with an everyday comparison.</p></div>
-      <div><h3>Try it on the page</h3><p>Move a slider or flip a switch and watch what changes. No software to install.</p></div>
-      <div><h3>Check you've got it</h3><p>A short recap after each lesson, and a quiz at the end of every module.</p></div>
     </div>
   </section>
 </div>`;
@@ -123,6 +225,7 @@
   function curriculum() {
     return `
 <section class="page-head">
+  ${crumbs([["Home", "#/"], ["Learn"]])}
   <h1>Learn</h1>
   <p>${TRACKS.length} branches · ${COURSE.length} modules · ${totalLessons} lessons · about ${hours} hours. New to electronics? Do Foundations first; after that, follow the branches in any order you like.</p>
   <div class="bar"><div style="width:${pct()}%"></div></div>
@@ -147,18 +250,19 @@
     const i = TRACKS.indexOf(t);
     const firstOpen = mods.find((m) => !quizPassed(m)) || mods[0];
     const related = PROJECTS.filter((p) => (TRACK_PROJECTS[t.id] || []).includes(p.id));
+    const list = (arr) => `<ul>${(arr || []).map((x) => `<li>${x}</li>`).join("")}</ul>`;
+    const sections = [["t-path", "Learning path"], ["t-skills", "Skills"], ["t-industry", "Industry"], ["t-interview", "Interviews"], ["t-resources", "Resources"]].concat(related.length ? [["t-projects", "Projects"]] : []);
     return `
 <section class="page-head narrow">
-  <a class="crumb" href="#/learn">← All branches</a>
+  ${crumbs([["Home", "#/"], ["Learn", "#/learn"], [t.title]])}
   <span class="eyebrow">Branch ${i + 1} of ${TRACKS.length}</span>
   <h1>${t.title}</h1>
   <p class="lead">${t.what}</p>
+  <div class="t-facts"><span><b>${mods.length}</b> module${mods.length > 1 ? "s" : ""}</span><span><b>${trackLessons(t)}</b> lessons</span><span><b>${trackDone(t)}</b> done</span>${t.prereq ? `<span><b>Before you start:</b> ${t.prereq}</span>` : ""}</div>
+  <nav class="jump" aria-label="Sections">${sections.map(([id, label]) => `<a href="#" data-jump="${id}">${label}</a>`).join("")}</nav>
 </section>
 <div class="narrow track-page">
-  <h2>Where it's used</h2>
-  <ul class="uses">${t.where.map((w) => `<li>${w}</li>`).join("")}</ul>
-
-  <h2>Your path, from basic to advanced</h2>
+  <h2 id="t-path">Your path, from basic to advanced</h2>
   <ol class="path">
     ${mods.map((m, k) => `
     <li class="${quizPassed(m) ? "done" : ""}">
@@ -172,14 +276,30 @@
   </ol>
   <div class="btn-row"><a class="btn primary big" href="#/learn/${firstOpen.id}/${(firstOpen.lessons.find((l) => !state.lessons[firstOpen.id + "/" + l.id]) || firstOpen.lessons[0]).id}">${trackDone(t) ? "Continue this branch" : "Start this branch"}</a></div>
 
-  <h2>Working in this industry</h2>
-  <div class="industry">
-    <div><h3>Typical roles</h3><ul>${t.industry.roles.map((r) => `<li>${r}</li>`).join("")}</ul></div>
-    <div><h3>Tools you'll use</h3><ul>${t.industry.tools.map((r) => `<li>${r}</li>`).join("")}</ul></div>
-  </div>
-  <p class="muted">${t.industry.next} For how products are built and careers in general, see <a href="#/track/careers">Industry &amp; Careers</a>.</p>
+  <h2 id="t-skills">What you'll be able to do</h2>
+  <ul class="checks-list">${(t.outcomes || []).map((o) => `<li>${o}</li>`).join("")}</ul>
+  <h3>Where it's used</h3>
+  <ul class="uses">${t.where.map((w) => `<li>${w}</li>`).join("")}</ul>
 
-  ${related.length ? `<h2>Projects for this branch</h2>
+  <h2 id="t-industry">Working in this industry</h2>
+  ${t.day ? `<div class="day"><span class="eyebrow">A day in the job</span><p>${t.day}</p></div>` : ""}
+  <div class="industry">
+    <div><h3>Typical roles</h3>${list(t.industry.roles)}</div>
+    <div><h3>Tools you'll use</h3>${list(t.industry.tools)}</div>
+  </div>
+  <p class="muted">${t.industry.next} For how products are made and careers overall, see <a href="#/track/careers">Industry &amp; Careers</a>.</p>
+
+  <h2 id="t-interview">Topics interviewers ask about</h2>
+  <p class="muted small">Be able to explain each of these in your own words, with a quick example.</p>
+  <ol class="interview">${(t.interview || []).map((x) => `<li>${x}</li>`).join("")}</ol>
+
+  <h2 id="t-resources">Go further</h2>
+  <div class="industry">
+    <div><h3>Standard textbooks</h3>${list(t.books)}</div>
+    <div><h3>Free resources</h3>${list(t.online)}</div>
+  </div>
+
+  ${related.length ? `<h2 id="t-projects">Projects for this branch</h2>
   <div class="proj-grid inline">${related.map(projCard).join("")}</div>` : ""}
 
   <div class="track-nav">
@@ -204,7 +324,7 @@
   function moduleOverview(m) {
     return `
 <section class="page-head narrow">
-  <a class="crumb" href="#/track/${trackOf(m).id}">← ${trackOf(m).title}</a>
+  ${crumbs([["Home", "#/"], [trackOf(m).title, `#/track/${trackOf(m).id}`], [m.title]])}
   <div class="m-hero"><div class="des-badge">${des(m)}</div><div><span class="m-num">Module ${COURSE.indexOf(m) + 1} · ${m.level}</span><h1>${m.title}</h1><p>${m.tagline}</p></div></div>
   <div class="bar"><div style="width:${(modDone(m) / m.lessons.length) * 100}%"></div></div>
 </section>
@@ -218,30 +338,34 @@
   function lesson(m, l) {
     const idx = m.lessons.indexOf(l);
     const mi = COURSE.indexOf(m);
-    const prev = idx > 0 ? `#/learn/${m.id}/${m.lessons[idx - 1].id}` : mi > 0 ? `#/quiz/${COURSE[mi - 1].id}` : null;
+    const prevL = idx > 0 ? m.lessons[idx - 1] : null;
+    const prev = prevL ? [`#/learn/${m.id}/${prevL.id}`, prevL.title] : mi > 0 ? [`#/quiz/${COURSE[mi - 1].id}`, "Previous module quiz"] : null;
     const next = idx < m.lessons.length - 1 ? `#/learn/${m.id}/${m.lessons[idx + 1].id}` : `#/quiz/${m.id}`;
     const nextLabel = idx < m.lessons.length - 1 ? m.lessons[idx + 1].title : "Module quiz";
     const rc = RECAPS[m.id + "/" + l.id];
+    const pr = (window.PRACTICE || {})[m.id + "/" + l.id];
+    const t = trackOf(m);
     return `
 <div class="lesson-layout">
-  <aside class="side">
-    <a class="crumb" href="#/track/${trackOf(m).id}">${trackOf(m).title}</a>
-    <h3>${m.title}</h3>
-    <ol class="side-list">
-      ${m.lessons.map((x) => `<li class="${x === l ? "cur" : ""} ${state.lessons[m.id + "/" + x.id] ? "done" : ""}"><a href="#/learn/${m.id}/${x.id}"><span class="chk"></span>${x.title}</a></li>`).join("")}
-      <li class="${quizPassed(m) ? "done" : ""}"><a href="#/quiz/${m.id}"><span class="chk"></span>Module quiz</a></li>
-    </ol>
-  </aside>
+  ${mapAside(m, l)}
   <article class="lesson">
-    <div class="lesson-meta"><span>Lesson ${idx + 1} of ${m.lessons.length}</span><span>${l.minutes} min read</span></div>
+    ${crumbs([["Home", "#/"], [t.title, `#/track/${t.id}`], [m.title, `#/learn/${m.id}`], [l.title]])}
+    <button class="btn ghost small map-btn" type="button" data-open-map>☰ Course map</button>
+    <div class="lesson-meta"><span>Lesson ${idx + 1} of ${m.lessons.length}</span><span>${l.minutes} min read</span>${pr ? `<span>${pr.length} practice problems</span>` : ""}</div>
+    <div class="mod-progress" aria-hidden="true">${m.lessons.map((x, k) => `<i class="${k === idx ? "cur" : state.lessons[m.id + "/" + x.id] ? "done" : ""}"></i>`).join("")}</div>
     <h1>${l.title}</h1>
     ${rc ? `<div class="big-idea"><span class="eyebrow">In short</span><p>${rc.idea}</p></div>` : ""}
     ${l.body}
+    ${pr ? `<section class="practice">
+      <h2>Practice</h2>
+      <p class="muted small">Try each problem on paper first, then open the worked solution.</p>
+      ${pr.map((x, i) => `<details class="prob"><summary><span class="qn">Q${i + 1}</span><span>${x.q}</span></summary><div class="sol"><span class="eyebrow">Worked solution</span><div>${x.a}</div></div></details>`).join("")}
+    </section>` : ""}
     ${rc ? `<section class="recap"><div class="recap-head">Recap</div><ol>${rc.recap.map((r) => `<li>${r}</li>`).join("")}</ol></section>` : ""}
-    <div class="lesson-nav">
-      ${prev ? `<a class="btn ghost" href="${prev}">← Previous</a>` : "<span></span>"}
-      <a class="btn primary" href="${next}" data-complete="${m.id}/${l.id}">Next → <small>${nextLabel}</small></a>
-    </div>
+    <nav class="pager" aria-label="Lesson navigation">
+      ${prev ? `<a class="pg prev" href="${prev[0]}"><small>← Previous</small><b>${prev[1]}</b></a>` : "<span></span>"}
+      <a class="pg next" href="${next}" data-complete="${m.id}/${l.id}"><small>Next →</small><b>${nextLabel}</b></a>
+    </nav>
   </article>
   <nav class="toc" aria-label="On this page"><span class="eyebrow">On this page</span><div id="toc-links"></div></nav>
 </div>`;
@@ -273,8 +397,8 @@
     const prev = state.quiz[m.id];
     return `
 <section class="page-head narrow">
-  <a class="crumb" href="#/learn/${m.id}">← ${m.title}</a>
-  <span class="eyebrow">Module ${COURSE.indexOf(m) + 1} quiz</span>
+  ${crumbs([["Home", "#/"], [trackOf(m).title, `#/track/${trackOf(m).id}`], [m.title, `#/learn/${m.id}`], ["Quiz"]])}
+  <span class="eyebrow">Module quiz</span>
   <h1>${m.title}</h1>
   <p>${m.quiz.length} questions. Get ${Math.ceil(m.quiz.length * PASS)} right to pass. Every answer is explained — wrong answers are how you learn!${prev ? ` <br><b>Your best so far: ${prev.best}/${m.quiz.length}</b>` : ""}</p>
 </section>
@@ -357,6 +481,7 @@
     if (cat && CATEGORIES[cat]) { projFilter.cat = cat; projFilter.plat = "all"; }
     return `
 <section class="page-head">
+  ${crumbs([["Home", "#/"], ["Projects"]])}
   <h1>Projects</h1>
   <p>Learning sticks when you build. Every project includes the parts, connections and code (or the lab procedure), and what you should see. Pick a category:</p>
 </section>
@@ -419,11 +544,12 @@
     return `
 <div class="proj-layout">
   <article class="lesson">
-    <a class="crumb" href="#/projects/type/${p.category}">← ${cat.name} projects</a>
+    ${crumbs([["Home", "#/"], ["Projects", "#/projects"], [cat.name, `#/projects/type/${p.category}`], [p.title]])}
     <div class="tags"><span class="plat ${p.platform}">${plat.short}</span>${cat.name !== plat.short ? `<span class="cat-tag">${cat.name}</span>` : ""}</div>
     <h1>${p.title}</h1>
     <h2>How it works</h2>
     ${p.how}
+    ${p.result ? `<div class="result-box"><span class="eyebrow">What success looks like</span><p>${p.result}</p></div>` : ""}
     <h2>${isLab ? "Components and equipment" : "You'll need"}</h2>
     <p class="muted small">Tick items off as you collect them.</p>
     <ul class="parts-list">${p.parts.map((x, i) => `<li><label><input type="checkbox" data-part="${i}" ${have.includes(i) ? "checked" : ""}><span>${x}</span></label></li>`).join("")}</ul>
@@ -432,6 +558,7 @@
     ${p.observe ? `<h2>What to measure and expect</h2>${p.observe}` : ""}
     ${isLab && !p.code ? "" : `<h2>${p.codes ? "Code" : p.lang === "spice" ? "Netlist" : "Code"}</h2>`}
     ${isLab && !p.code ? "" : codeBlock}
+    ${p.fix ? `<h2>Troubleshooting</h2><dl class="fixes">${p.fix.map((f) => { const k = f.indexOf(":"); return `<div><dt>${f.slice(0, k)}</dt><dd>${f.slice(k + 1).trim()}</dd></div>`; }).join("")}</dl>` : ""}
     <div class="challenge"><span class="eyebrow">Take it further</span><p>${p.challenge}</p></div>
     ${H.mistake(`<p>Double-check polarity (LEDs, electrolytic capacitors, diodes), connect all grounds together, and ${safety}.</p>`)}
   </article>
@@ -446,8 +573,19 @@
       <div><dt>Code</dt><dd>${lang}</dd></div>
     </dl>
     <div class="learn"><span class="eyebrow">You'll learn</span><ul>${p.learn.map((x) => `<li>${x}</li>`).join("")}</ul></div>
+    ${relatedLessons(p)}
   </aside>
 </div>`;
+  }
+
+  // Lessons a project builds on, shown in the side card.
+  function relatedLessons(p) {
+    const items = (p.lessons || []).map((key) => {
+      const [mid, lid] = key.split("/");
+      const m = COURSE.find((x) => x.id === mid), l = m && m.lessons.find((x) => x.id === lid);
+      return l ? `<li class="${state.lessons[key] ? "done" : ""}"><a href="#/learn/${mid}/${lid}"><span class="chk"></span>${l.title}</a></li>` : "";
+    }).join("");
+    return items ? `<div class="learn"><span class="eyebrow">Read first</span><ul class="read-first">${items}</ul></div>` : "";
   }
 
   function wireProject(p) {
@@ -461,6 +599,7 @@
   function glossary() {
     return `
 <section class="page-head narrow">
+  ${crumbs([["Home", "#/"], ["Glossary"]])}
   <h1>Glossary</h1>
   <p>Every key term from the course, in one line each.</p>
   <input class="search" id="gsearch" type="search" placeholder="Search terms… (e.g. PWM, MOSFET)" aria-label="Search glossary">
@@ -708,10 +847,15 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
     else if (parts[0] === "projects") { const p = PROJECTS.find((x) => x.id === parts[1]); html = p ? project(p) : notFound(); if (p) { title = p.title; after = () => wireProject(p); } }
     else if (parts[0] === "glossary") {
       html = glossary(); title = "Glossary";
-      after = () => document.getElementById("gsearch").addEventListener("input", (e) => {
-        const q = e.target.value.toLowerCase();
-        document.querySelectorAll(".g-item").forEach((it) => (it.hidden = !it.textContent.toLowerCase().includes(q)));
-      });
+      after = () => {
+        const input = document.getElementById("gsearch");
+        const filter = () => {
+          const q = input.value.toLowerCase();
+          document.querySelectorAll(".g-item").forEach((it) => (it.hidden = !it.textContent.toLowerCase().includes(q)));
+        };
+        input.addEventListener("input", filter);
+        if (parts[1]) { input.value = decodeURIComponent(parts.slice(1).join("/")); filter(); }
+      };
     }
     else if (parts[0] === "certificate") { html = certificate(); after = wireCertificate; title = "Certificate"; }
     else if (parts[0] === "verify") { html = certificate(true); after = () => { wireCertificate(); prefillVerify(parts); }; title = "Verify a certificate"; }
@@ -724,11 +868,15 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
     if (after) after();
     window.scrollTo(0, 0);
     app.focus({ preventScroll: true });
-    document.body.classList.remove("nav-open");
+    document.body.classList.remove("nav-open", "map-open", "search-open");
   }
 
   /* ---------------- Global events ---------------- */
   document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-open-map]")) document.body.classList.add("map-open");
+    if (e.target.closest("[data-close-map]") || e.target.closest(".side a") || e.target.classList.contains("map-scrim")) document.body.classList.remove("map-open");
+    const jump = e.target.closest("[data-jump]");
+    if (jump) { e.preventDefault(); const el = document.getElementById(jump.dataset.jump); if (el) el.scrollIntoView({ behavior: "smooth" }); }
     const done = e.target.closest("[data-complete]");
     if (done) { state.lessons[done.dataset.complete] = true; save(); }
     const ct = e.target.closest(".copy-txt");
@@ -747,10 +895,10 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
 
   document.addEventListener("keydown", (e) => {
     if (e.target.matches("input, textarea, select")) return;
-    const nav = document.querySelector(".lesson-nav");
+    const nav = document.querySelector(".pager");
     if (!nav) return;
-    if (e.key === "ArrowRight") { const a = nav.querySelector(".btn.primary"); if (a) a.click(); }
-    if (e.key === "ArrowLeft") { const a = nav.querySelector(".btn.ghost"); if (a) a.click(); }
+    if (e.key === "ArrowRight") { const a = nav.querySelector(".next"); if (a) a.click(); }
+    if (e.key === "ArrowLeft") { const a = nav.querySelector(".prev"); if (a) a.click(); }
   });
 
   // Reading progress bar
@@ -787,6 +935,7 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
     setTimeout(() => (resetLink.textContent = "Reset my progress"), 2000);
   });
 
+  wireSearch();
   window.addEventListener("hashchange", render);
   updateHeader();
   render();

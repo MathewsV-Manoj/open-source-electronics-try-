@@ -23,7 +23,9 @@ The course is organised into **8 branches of electronics**. Each one goes from b
 | 7 | Power Electronics | Switching converters, inverters, motor drives, EVs, solar |
 | 8 | Industry & Careers | Product lifecycle, PCB design, testing & certification, careers roadmap |
 
-17 modules and 74 lessons in all, with 22 simulators, a summary and recap for every lesson, a quiz for every module, "For GATE" notes, and a searchable glossary.
+17 modules and 74 lessons in all, with 22 simulators, 148 worked practice problems, a summary and recap for every lesson, a quiz for every module, "For GATE" notes, and a searchable glossary.
+
+Each branch page adds what you'll be able to do, prerequisites, a day in the job, interview topics, standard textbooks and free resources. Site-wide search (press <kbd>/</kbd>), breadcrumbs and a course map make it easy to find your way around.
 
 ![A logic gate simulator inside a lesson](docs/screenshots/simulator.png)
 
@@ -69,7 +71,8 @@ In **Settings → Pages**, choose **Deploy from a branch**, select the branch an
 - Lessons live in `assets/js/content/NN-*.js`. Each file adds one module (lessons + quiz) to `COURSE`.
 - Helpers in `assets/js/core.js` (`H.analogy`, `H.key`, `H.mistake`, `H.gate`, `H.fact`, `H.code`, `H.widget`, `H.formula`, `H.table`, `H.steps`) keep lesson markup short.
 - Simulators are in `assets/js/widgets.js`. Place one in a lesson with `H.widget("name", "Title")`.
-- Branches (and their industry notes) are in `assets/js/content/tracks.js`.
+- Branches are in `assets/js/content/tracks.js`, with their depth (outcomes, interviews, books) in `tracks-depth.js`.
+- Practice problems are in `assets/js/content/practice.js`; project troubleshooting and related lessons are in `project-depth.js`.
 - Lesson summaries and recaps are in `assets/js/content/recaps.js` and `recaps-more.js`.
 - Projects are in `assets/js/content/projects.js` (microcontroller) and `projects-more.js` (lab, VLSI, simulation); the glossary is in `projects.js`.
 - The link-preview image is `assets/og-image.png` (1200 × 630).

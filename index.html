@@ -46,13 +46,21 @@
       <a href="#/glossary" data-r="/glossary">Glossary</a>
       <a href="#/certificate" data-r="/certificate">Certificate</a>
     </nav>
+    <div class="search-wrap" id="search-wrap">
+      <svg class="s-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="q" type="search" placeholder="Search lessons, projects, terms" aria-label="Search the course" autocomplete="off">
+      <kbd>/</kbd>
+      <div id="q-res" class="q-res" role="listbox" hidden></div>
+    </div>
     <div class="top-actions">
+      <button id="search-btn" class="icon-btn search-btn" type="button" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       <a id="ring" class="ring" href="#/learn" aria-label="Course progress"><span>0%</span></a>
       <button id="theme" class="icon-btn" type="button" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
       <button id="menu" class="icon-btn menu-btn" type="button" aria-label="Open menu">☰</button>
     </div>
   </header>
 
+  <div class="map-scrim" aria-hidden="true"></div>
   <main id="app" tabindex="-1">
     <noscript><p style="padding:2rem">OpenCircuit Academy needs JavaScript turned on for its simulators and quizzes.</p></noscript>
   </main>
@@ -103,10 +111,13 @@
   <script src="assets/js/content/16-power.js"></script>
   <script src="assets/js/content/17-industry.js"></script>
   <script src="assets/js/content/tracks.js"></script>
+  <script src="assets/js/content/tracks-depth.js"></script>
   <script src="assets/js/content/recaps.js"></script>
   <script src="assets/js/content/recaps-more.js"></script>
   <script src="assets/js/content/projects.js"></script>
   <script src="assets/js/content/projects-more.js"></script>
+  <script src="assets/js/content/project-depth.js"></script>
+  <script src="assets/js/content/practice.js"></script>
   <script src="assets/js/widgets.js"></script>
   <script src="assets/js/app.js"></script>
   <script>
