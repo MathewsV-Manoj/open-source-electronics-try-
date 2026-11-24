@@ -162,47 +162,70 @@
 
 
   function home() {
-    const started = doneLessons() > 0;
+    const started = doneLessons() > 0 || COURSE.some(quizPassed);
     const nx = nextInfo();
+    const stageGroups = [
+      { title: "01 · Start with the fundamentals", note: "Build a reliable base before moving into specialised topics.", ids: ["foundations"] },
+      { title: "02 · Understand circuits and logic", note: "Learn how analogue signals and digital systems behave.", ids: ["analog", "digital"] },
+      { title: "03 · Choose your engineering direction", note: "Move into firmware, wireless, chip design or energy systems.", ids: ["embedded", "communication", "vlsi", "power"] },
+      { title: "04 · Connect learning to industry", note: "Understand product development, tools and engineering careers.", ids: ["careers"] },
+    ];
     return `
-<div class="home">
-  <section class="intro">
-    <span class="eyebrow">A free electronics course</span>
-    <h1>Learn electronics, from the electron to the industry.</h1>
-    <p>Eight branches, each from the basics to how it works in real companies — with simulators, practice problems, 43 projects and a certificate.</p>
-    <div class="facts"><span><b>${TRACKS.length}</b> branches</span><span><b>${totalLessons}</b> lessons</span><span><b>${labCount}</b> simulators</span><span><b>${PROJECTS.length}</b> projects</span></div>
+<div class="home home-redesign">
+  <section class="academy-hero">
+    <div class="academy-hero-copy">
+      <span class="eyebrow"><span class="eyebrow-dot"></span> Open learning · Electronics engineering</span>
+      <h1>Understand the circuit.<br><em>Build what comes next.</em></h1>
+      <p>A structured, hands-on route through electronics — from first principles to embedded systems, communication, chip design and real engineering projects.</p>
+      <div class="academy-actions">
+        <a class="btn primary big" href="${started ? nx.href : "#/learn/basics/atoms"}">${started ? "Continue learning" : "Start learning"} <span aria-hidden="true">→</span></a>
+        <a class="btn ghost big" href="#/projects">Explore projects</a>
+      </div>
+      <div class="academy-proof">
+        <span><b>${TRACKS.length}</b> learning tracks</span>
+        <span><b>${totalLessons}</b> guided lessons</span>
+        <span><b>${PROJECTS.length}</b> build ideas</span>
+      </div>
+    </div>
+    <aside class="learning-panel" aria-label="Your learning overview">
+      <div class="learning-panel-top"><span class="panel-kicker">YOUR LEARNING SPACE</span><span class="live-mark">SELF-PACED</span></div>
+      <div class="panel-progress">
+        <div><span class="panel-label">Overall progress</span><strong>${pct()}<small>%</small></strong></div>
+        <div class="panel-ring" style="--progress:${pct()}"><span>${pct()}%</span></div>
+      </div>
+      <div class="panel-track"><div class="panel-track-head"><span>Lessons completed</span><b>${doneLessons()} / ${totalLessons}</b></div><div class="panel-track-bar"><i style="width:${totalLessons ? (doneLessons()/totalLessons)*100 : 0}%"></i></div></div>
+      <div class="panel-next">
+        <span class="panel-label">${started ? "PICK UP WHERE YOU LEFT OFF" : "RECOMMENDED FIRST STEP"}</span>
+        <a href="${started ? nx.href : "#/track/foundations"}"><b>${started ? nx.title : "Electronics Foundations"}</b><span>${started ? nx.sub : "Start with charge, voltage, current and components"} <span aria-hidden="true">↗</span></span></a>
+      </div>
+      <a class="panel-all" href="#/learn">View full curriculum <span aria-hidden="true">→</span></a>
+    </aside>
+    <div class="hero-circuit" aria-hidden="true"><span></span><i></i><b></b></div>
   </section>
 
-  ${started ? `
-  <a class="resume" href="${nx.href}">
-    <span class="eyebrow">Continue where you left off</span>
-    <b>${nx.title}</b>
-    <small>${nx.sub}</small>
-    <span class="resume-bar"><i style="width:${pct()}%"></i></span>
-    <small>${pct()}% of the course complete</small>
-  </a>` : `
-  <section class="start">
-    <h2>New to electronics? Start here</h2>
-    <ol class="start-steps">
-      <li><span>1</span><div><b><a href="#/track/foundations">Do the Foundations branch</a></b><p>13 short lessons: electrons, voltage, components and circuits. No background needed.</p></div></li>
-      <li><span>2</span><div><b><a href="#/learn">Pick a branch that interests you</a></b><p>Analog, digital, embedded, VLSI, communication or power — each builds on Foundations.</p></div></li>
-      <li><span>3</span><div><b><a href="#/projects">Build a project</a></b><p>Start with an Easy one in the Lab or Microcontroller category.</p></div></li>
-    </ol>
-    <a class="btn primary big" href="#/learn/basics/atoms">Start the first lesson</a>
-  </section>`}
-
-  <section class="home-sec">
-    <header><h2>Branches of electronics</h2><a href="#/learn">All lessons</a></header>
-    <div class="branch-grid">
-      ${TRACKS.map((t, i) => branchCard(t, i)).join("")}
-    </div>
+  <section class="home-highlights" aria-label="What you can do">
+    <div><span class="highlight-icon">01</span><b>Learn in sequence</b><p>Concepts are arranged from beginner foundations to advanced applications.</p></div>
+    <div><span class="highlight-icon">02</span><b>Experiment in the browser</b><p>Use interactive circuit, signal and digital-system simulators as you study.</p></div>
+    <div><span class="highlight-icon">03</span><b>Build and verify</b><p>Turn theory into practical projects, then check your understanding with quizzes.</p></div>
   </section>
 
-  <section class="home-sec">
-    <header><h2>Projects</h2><a href="#/projects">All ${PROJECTS.length} projects</a></header>
-    <div class="cat-grid">
-      ${Object.entries(CATEGORIES).map(([k, c]) => `<a class="cat-card" href="#/projects/type/${k}"><b>${c.name}</b><span class="n">${catCount(k)} projects</span><span>${c.desc}</span></a>`).join("")}
-    </div>
+  <section class="learning-roadmap home-sec">
+    <header class="section-heading"><div><span class="eyebrow">A clear route through ECE</span><h2>Follow the learning roadmap</h2><p>Start at the beginning, strengthen the core, then choose a specialisation.</p></div><a class="text-link" href="#/learn">Full curriculum <span aria-hidden="true">→</span></a></header>
+    ${stageGroups.map((stage) => {
+      const tracks = stage.ids.map((id) => TRACKS.find((t) => t.id === id)).filter(Boolean);
+      return `<section class="roadmap-stage"><div class="roadmap-stage-head"><h3>${stage.title}</h3><p>${stage.note}</p></div><div class="branch-grid">${tracks.map((t) => branchCard(t, TRACKS.indexOf(t))).join("")}</div></section>`;
+    }).join("")}
+  </section>
+
+  <section class="home-sec project-preview">
+    <header class="section-heading"><div><span class="eyebrow">Theory into practice</span><h2>Build something real</h2><p>Use guided project briefs to practise circuit design, coding, debugging and testing.</p></div><a class="text-link" href="#/projects">Browse ${PROJECTS.length} projects <span aria-hidden="true">→</span></a></header>
+    <div class="feature-projects">${PROJECTS.slice(0, 3).map(projCard).join("")}</div>
+    <div class="project-categories">${Object.entries(CATEGORIES).map(([k, c]) => `<a href="#/projects/type/${k}"><b>${c.name}</b><span>${catCount(k)} projects</span></a>`).join("")}</div>
+  </section>
+
+  <section class="academy-bottom-cta">
+    <div><span class="eyebrow">Keep your momentum</span><h2>One concept. One experiment. One step forward.</h2><p>Progress is saved in this browser, so you can return to your lessons and continue at your own pace.</p></div>
+    <a class="btn primary big" href="${started ? nx.href : "#/learn/basics/atoms"}">${started ? "Resume your course" : "Begin with lesson one"} <span aria-hidden="true">→</span></a>
   </section>
 </div>`;
   }
@@ -223,25 +246,31 @@
   }
 
   function curriculum() {
+    const stages = [
+      { title: "01 · Foundations", intro: "Start here if you are new to electronics.", ids: ["foundations"] },
+      { title: "02 · Core electronics", intro: "Understand continuous signals, components and digital logic.", ids: ["analog", "digital"] },
+      { title: "03 · Engineering specialisations", intro: "Choose a direction and develop practical depth.", ids: ["embedded", "communication", "vlsi", "power"] },
+      { title: "04 · Industry and careers", intro: "Connect technical knowledge with real product development.", ids: ["careers"] },
+    ];
     return `
-<section class="page-head">
+<section class="page-head curriculum-hero">
   ${crumbs([["Home", "#/"], ["Learn"]])}
-  <h1>Learn</h1>
-  <p>${TRACKS.length} branches · ${COURSE.length} modules · ${totalLessons} lessons · about ${hours} hours. New to electronics? Do Foundations first; after that, follow the branches in any order you like.</p>
-  <div class="bar"><div style="width:${pct()}%"></div></div>
-  <p class="muted small">${doneLessons()} of ${totalLessons} lessons done · ${COURSE.filter(quizPassed).length} of ${COURSE.length} quizzes passed</p>
+  <span class="eyebrow">The complete learning map</span>
+  <h1>Electronics, organised for progress.</h1>
+  <p>Follow the recommended sequence or jump into a topic you already know. Each track contains structured modules, lessons and a knowledge check.</p>
+  <div class="curriculum-summary">
+    <div><b>${TRACKS.length}</b><span>tracks</span></div><div><b>${COURSE.length}</b><span>modules</span></div><div><b>${totalLessons}</b><span>lessons</span></div><div><b>${hours}h</b><span>estimated study time</span></div>
+  </div>
+  <div class="curriculum-progress"><div class="curriculum-progress-head"><b>Your course progress</b><span>${pct()}% complete</span></div><div class="bar"><div style="width:${pct()}%"></div></div><p class="muted small">${doneLessons()} of ${totalLessons} lessons completed · ${COURSE.filter(quizPassed).length} of ${COURSE.length} module quizzes passed</p></div>
 </section>
-<div class="tracks">
-  ${TRACKS.map((t, i) => `
-  <section class="track-row">
-    <div class="track-head">
-      <span class="n">${String(i + 1).padStart(2, "0")}</span>
-      <div><h2><a href="#/track/${t.id}">${t.title}</a></h2><p>${t.tagline}</p></div>
-    </div>
-    <ol class="track-mods">
-      ${trackMods(t).map((m) => `<li class="${quizPassed(m) ? "done" : ""}"><a href="#/learn/${m.id}"><span class="chk"></span><span class="t">${m.title}</span><span class="lvl">${m.level}</span><small>${modDone(m)}/${m.lessons.length}</small></a></li>`).join("")}
-    </ol>
-  </section>`).join("")}
+<div class="curriculum-stages">
+  ${stages.map((stage) => {
+    const tracks = stage.ids.map((id) => TRACKS.find((t) => t.id === id)).filter(Boolean);
+    return `<section class="curriculum-stage"><header><div><span class="eyebrow">Learning stage</span><h2>${stage.title}</h2><p>${stage.intro}</p></div><span class="stage-count">${tracks.length} track${tracks.length === 1 ? "" : "s"}</span></header><div class="curriculum-track-list">${tracks.map((t) => {
+      const mods = trackMods(t), total = trackLessons(t), done = trackDone(t);
+      return `<article class="curriculum-track"><div class="curriculum-track-main"><span class="track-index">${String(TRACKS.indexOf(t)+1).padStart(2,"0")}</span><div><h3><a href="#/track/${t.id}">${t.title}</a></h3><p>${t.tagline}</p><div class="track-meta"><span>${mods.length} modules</span><span>${total} lessons</span><span>${done} completed</span></div></div></div><div class="curriculum-track-side"><div class="track-progress"><i style="width:${total ? done/total*100 : 0}%"></i></div><a class="btn ghost small" href="#/track/${t.id}">View track <span aria-hidden="true">→</span></a></div></article>`;
+    }).join("")}</div></section>`;
+  }).join("")}
 </div>`;
   }
 
