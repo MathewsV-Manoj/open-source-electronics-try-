@@ -176,3 +176,6 @@ body { font-size: 16px; line-height: 1.65; }
   .curriculum-track-side { width: 100%; flex-direction: row; align-items: center; }
   .curriculum-track-side .track-progress { flex: 1; }
 }
+
+.skip-link { position: fixed; z-index: 120; top: .5rem; left: .5rem; transform: translateY(-160%); padding: .55rem .8rem; border-radius: 8px; background: var(--fg); color: var(--bg); font-weight: 700; }
+.skip-link:focus { transform: translateY(0); }
