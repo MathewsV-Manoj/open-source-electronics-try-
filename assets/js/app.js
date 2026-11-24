@@ -194,7 +194,7 @@
     </div>
     <aside class="learning-panel" aria-label="Your learning overview">
       <div class="learning-panel-top"><span class="panel-kicker">YOUR LEARNING SPACE</span><span class="live-mark">SELF-PACED</span></div>
-      <div class="learner-rank"><div class="rank-mark">LV ${learnerLevel()}</div><div class="rank-copy"><b>Learning level ${learnerLevel()}</b><span>${xpTotal()} XP · ${250 - (xpTotal() % 250)} XP to next level</span><div class="rank-bar"><i style="width:${levelProgress()}%"></i></div></div><div class="rank-badges"><b>${learnerBadges().filter((b) => b.earned).length}</b><span>badges</span></div></div>
+      <div class="learner-rank"><div class="rank-mark">LV ${learnerLevel()}</div><div class="rank-copy"><b>Learning level ${learnerLevel()}</b><span>${xpTotal()} XP · ${250 - (xpTotal() % 250)} XP to next level</span><div class="rank-bar"><i style="width:${levelProgress()}%"></i></div></div><div class="rank-badges"><b>${learnerBadges().filter((b) => b.earned).length}</b><span>badges</span></div><div class="rank-achievements">${learnerBadges().map((b) => `<span class="${b.earned ? "earned" : "locked"}">${b.earned ? "✓" : "○"} ${b.name}</span>`).join("")}</div></div>
       <div class="panel-progress">
         <div><span class="panel-label">Overall progress</span><strong>${pct()}<small>%</small></strong></div>
         <div class="panel-ring" style="--progress:${pct()}"><span>${pct()}%</span></div>
@@ -913,7 +913,7 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
     const jump = e.target.closest("[data-jump]");
     if (jump) { e.preventDefault(); const el = document.getElementById(jump.dataset.jump); if (el) el.scrollIntoView({ behavior: "smooth" }); }
     const recapComplete = e.target.closest("[data-recap-complete]");
-    if (recapComplete && !state.recaps[recapComplete.dataset.recapComplete]) { state.recaps[recapComplete.dataset.recapComplete] = true; save(); recapComplete.disabled = true; recapComplete.textContent = "Sprint completed ✓"; recapComplete.closest(".recap-sprint").querySelector(".recap-score").textContent = "Complete"; }
+    if (recapComplete && !state.recaps[recapComplete.dataset.recapComplete]) { state.recaps[recapComplete.dataset.recapComplete] = true; save(); recapComplete.disabled = true; recapComplete.textContent = "Sprint completed ✓"; recapComplete.closest(".recap-sprint").querySelector(".recap-score").textContent = "Complete"; confetti(); }
     const done = e.target.closest("[data-complete]");
     if (done) { state.lessons[done.dataset.complete] = true; save(); }
     const ct = e.target.closest(".copy-txt");
