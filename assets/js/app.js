@@ -16,7 +16,24 @@
       try { localStorage.setItem(STORE, JSON.stringify(d)); } catch { /* storage unavailable: progress lasts this visit only */ }
     },
   };
-  let state = Object.assign({ lessons: {}, quiz: {}, name: "" }, store.load());
+  function restoreProgress(raw) {
+    const clean = { lessons: {}, quiz: {}, recaps: {}, name: "" };
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return clean;
+    const lessons = new Set(COURSE.flatMap((m) => m.lessons.map((l) => m.id + "/" + l.id)));
+    for (const key of lessons) if (raw.lessons && raw.lessons[key] === true) clean.lessons[key] = true;
+    for (const m of COURSE) {
+      const saved = raw.quiz && raw.quiz[m.id];
+      if (!saved || typeof saved !== "object") continue;
+      const best = Number.isInteger(saved.best) ? Math.max(0, Math.min(m.quiz.length, saved.best)) : 0;
+      const validDate = typeof saved.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(saved.date);
+      const passed = saved.passed === true && best >= Math.ceil(m.quiz.length * PASS) && validDate;
+      if (best || passed) clean.quiz[m.id] = { best, passed, date: passed ? saved.date : null };
+    }
+    for (const key of Object.keys(RECAPS || {})) if (raw.recaps && raw.recaps[key] === true) clean.recaps[key] = true;
+    clean.name = typeof raw.name === "string" ? raw.name.trim().slice(0, 48) : "";
+    return clean;
+  }
+  let state = restoreProgress(store.load());
   const save = () => { store.save(state); updateHeader(); };
 
   // Order modules by branch so "next module" follows the learning path.
@@ -29,6 +46,11 @@
   const quizPassed = (m) => state.quiz[m.id] && state.quiz[m.id].passed;
   const allPassed = () => COURSE.every(quizPassed);
   const pct = () => Math.round(((doneLessons() + COURSE.filter(quizPassed).length) / (totalLessons + COURSE.length)) * 100);
+  const recapCount = () => Object.values(state.recaps || {}).filter(Boolean).length;
+  const xpTotal = () => doneLessons() * 20 + COURSE.filter(quizPassed).length * 50 + recapCount() * 15;
+  const learnerLevel = () => Math.floor(xpTotal() / 250) + 1;
+  const levelProgress = () => (xpTotal() % 250) / 250 * 100;
+  const learnerBadges = () => [{name:"First steps",earned:doneLessons()>=1},{name:"Recall ready",earned:recapCount()>=1},{name:"Quiz finisher",earned:COURSE.some(quizPassed)},{name:"Consistent builder",earned:doneLessons()>=10}];
 
   function nextStop() {
     for (const m of COURSE) {
@@ -162,47 +184,71 @@
 
 
   function home() {
-    const started = doneLessons() > 0;
+    const started = doneLessons() > 0 || COURSE.some(quizPassed);
     const nx = nextInfo();
+    const stageGroups = [
+      { title: "01 · Start with the fundamentals", note: "Build a reliable base before moving into specialised topics.", ids: ["foundations"] },
+      { title: "02 · Understand circuits and logic", note: "Learn how analogue signals and digital systems behave.", ids: ["analog", "digital"] },
+      { title: "03 · Choose your engineering direction", note: "Move into firmware, wireless, chip design or energy systems.", ids: ["embedded", "communication", "vlsi", "power"] },
+      { title: "04 · Connect learning to industry", note: "Understand product development, tools and engineering careers.", ids: ["careers"] },
+    ];
     return `
-<div class="home">
-  <section class="intro">
-    <span class="eyebrow">A free electronics course</span>
-    <h1>Learn electronics, from the electron to the industry.</h1>
-    <p>Eight branches, each from the basics to how it works in real companies — with simulators, practice problems, 43 projects and a certificate.</p>
-    <div class="facts"><span><b>${TRACKS.length}</b> branches</span><span><b>${totalLessons}</b> lessons</span><span><b>${labCount}</b> simulators</span><span><b>${PROJECTS.length}</b> projects</span></div>
+<div class="home home-redesign">
+  <section class="academy-hero">
+    <div class="academy-hero-copy">
+      <span class="eyebrow"><span class="eyebrow-dot"></span> Open learning · Electronics engineering</span>
+      <h1>Understand the circuit.<br><em>Build what comes next.</em></h1>
+      <p>A structured, hands-on route through electronics — from first principles to embedded systems, communication, chip design and real engineering projects.</p>
+      <div class="academy-actions">
+        <a class="btn primary big" href="${started ? nx.href : "#/learn/basics/atoms"}">${started ? "Continue learning" : "Start learning"} <span aria-hidden="true">→</span></a>
+        <a class="btn ghost big" href="#/projects">Explore projects</a>
+      </div>
+      <div class="academy-proof">
+        <span><b>${TRACKS.length}</b> learning tracks</span>
+        <span><b>${totalLessons}</b> guided lessons</span>
+        <span><b>${PROJECTS.length}</b> build ideas</span>
+      </div>
+    </div>
+    <aside class="learning-panel" aria-label="Your learning overview">
+      <div class="learning-panel-top"><span class="panel-kicker">YOUR LEARNING SPACE</span><span class="live-mark">SELF-PACED</span></div>
+      <div class="learner-rank"><div class="rank-mark">LV ${learnerLevel()}</div><div class="rank-copy"><b>Learning level ${learnerLevel()}</b><span>${xpTotal()} XP · ${250 - (xpTotal() % 250)} XP to next level</span><div class="rank-bar"><i style="width:${levelProgress()}%"></i></div></div><div class="rank-badges"><b>${learnerBadges().filter((b) => b.earned).length}</b><span>badges</span></div><div class="rank-achievements">${learnerBadges().map((b) => `<span class="${b.earned ? "earned" : "locked"}">${b.earned ? "✓" : "○"} ${b.name}</span>`).join("")}</div></div>
+      <div class="panel-progress">
+        <div><span class="panel-label">Overall progress</span><strong>${pct()}<small>%</small></strong></div>
+        <div class="panel-ring" style="--progress:${pct()}"><span>${pct()}%</span></div>
+      </div>
+      <div class="panel-track"><div class="panel-track-head"><span>Lessons completed</span><b>${doneLessons()} / ${totalLessons}</b></div><div class="panel-track-bar"><i style="width:${totalLessons ? (doneLessons()/totalLessons)*100 : 0}%"></i></div></div>
+      <div class="panel-next">
+        <span class="panel-label">${started ? "PICK UP WHERE YOU LEFT OFF" : "RECOMMENDED FIRST STEP"}</span>
+        <a href="${started ? nx.href : "#/track/foundations"}"><b>${started ? nx.title : "Electronics Foundations"}</b><span>${started ? nx.sub : "Start with charge, voltage, current and components"} <span aria-hidden="true">↗</span></span></a>
+      </div>
+      <a class="panel-all" href="#/learn">View full curriculum <span aria-hidden="true">→</span></a>
+    </aside>
+    <div class="hero-circuit" aria-hidden="true"><span></span><i></i><b></b></div>
   </section>
 
-  ${started ? `
-  <a class="resume" href="${nx.href}">
-    <span class="eyebrow">Continue where you left off</span>
-    <b>${nx.title}</b>
-    <small>${nx.sub}</small>
-    <span class="resume-bar"><i style="width:${pct()}%"></i></span>
-    <small>${pct()}% of the course complete</small>
-  </a>` : `
-  <section class="start">
-    <h2>New to electronics? Start here</h2>
-    <ol class="start-steps">
-      <li><span>1</span><div><b><a href="#/track/foundations">Do the Foundations branch</a></b><p>13 short lessons: electrons, voltage, components and circuits. No background needed.</p></div></li>
-      <li><span>2</span><div><b><a href="#/learn">Pick a branch that interests you</a></b><p>Analog, digital, embedded, VLSI, communication or power — each builds on Foundations.</p></div></li>
-      <li><span>3</span><div><b><a href="#/projects">Build a project</a></b><p>Start with an Easy one in the Lab or Microcontroller category.</p></div></li>
-    </ol>
-    <a class="btn primary big" href="#/learn/basics/atoms">Start the first lesson</a>
-  </section>`}
-
-  <section class="home-sec">
-    <header><h2>Branches of electronics</h2><a href="#/learn">All lessons</a></header>
-    <div class="branch-grid">
-      ${TRACKS.map((t, i) => branchCard(t, i)).join("")}
-    </div>
+  <section class="home-highlights" aria-label="What you can do">
+    <div><span class="highlight-icon">01</span><b>Learn in sequence</b><p>Concepts are arranged from beginner foundations to advanced applications.</p></div>
+    <div><span class="highlight-icon">02</span><b>Experiment in the browser</b><p>Use interactive circuit, signal and digital-system simulators as you study.</p></div>
+    <div><span class="highlight-icon">03</span><b>Build and verify</b><p>Turn theory into practical projects, then check your understanding with quizzes.</p></div>
   </section>
 
-  <section class="home-sec">
-    <header><h2>Projects</h2><a href="#/projects">All ${PROJECTS.length} projects</a></header>
-    <div class="cat-grid">
-      ${Object.entries(CATEGORIES).map(([k, c]) => `<a class="cat-card" href="#/projects/type/${k}"><b>${c.name}</b><span class="n">${catCount(k)} projects</span><span>${c.desc}</span></a>`).join("")}
-    </div>
+  <section class="learning-roadmap home-sec">
+    <header class="section-heading"><div><span class="eyebrow">A clear route through ECE</span><h2>Follow the learning roadmap</h2><p>Start at the beginning, strengthen the core, then choose a specialisation.</p></div><a class="text-link" href="#/learn">Full curriculum <span aria-hidden="true">→</span></a></header>
+    ${stageGroups.map((stage) => {
+      const tracks = stage.ids.map((id) => TRACKS.find((t) => t.id === id)).filter(Boolean);
+      return `<section class="roadmap-stage"><div class="roadmap-stage-head"><h3>${stage.title}</h3><p>${stage.note}</p></div><div class="branch-grid">${tracks.map((t) => branchCard(t, TRACKS.indexOf(t))).join("")}</div></section>`;
+    }).join("")}
+  </section>
+
+  <section class="home-sec project-preview">
+    <header class="section-heading"><div><span class="eyebrow">Theory into practice</span><h2>Build something real</h2><p>Use guided project briefs to practise circuit design, coding, debugging and testing.</p></div><a class="text-link" href="#/projects">Browse ${PROJECTS.length} projects <span aria-hidden="true">→</span></a></header>
+    <div class="feature-projects">${PROJECTS.slice(0, 3).map(projCard).join("")}</div>
+    <div class="project-categories">${Object.entries(CATEGORIES).map(([k, c]) => `<a href="#/projects/type/${k}"><b>${c.name}</b><span>${catCount(k)} projects</span></a>`).join("")}</div>
+  </section>
+
+  <section class="academy-bottom-cta">
+    <div><span class="eyebrow">Keep your momentum</span><h2>One concept. One experiment. One step forward.</h2><p>Progress is saved in this browser, so you can return to your lessons and continue at your own pace.</p></div>
+    <a class="btn primary big" href="${started ? nx.href : "#/learn/basics/atoms"}">${started ? "Resume your course" : "Begin with lesson one"} <span aria-hidden="true">→</span></a>
   </section>
 </div>`;
   }
@@ -223,25 +269,31 @@
   }
 
   function curriculum() {
+    const stages = [
+      { title: "01 · Foundations", intro: "Start here if you are new to electronics.", ids: ["foundations"] },
+      { title: "02 · Core electronics", intro: "Understand continuous signals, components and digital logic.", ids: ["analog", "digital"] },
+      { title: "03 · Engineering specialisations", intro: "Choose a direction and develop practical depth.", ids: ["embedded", "communication", "vlsi", "power"] },
+      { title: "04 · Industry and careers", intro: "Connect technical knowledge with real product development.", ids: ["careers"] },
+    ];
     return `
-<section class="page-head">
+<section class="page-head curriculum-hero">
   ${crumbs([["Home", "#/"], ["Learn"]])}
-  <h1>Learn</h1>
-  <p>${TRACKS.length} branches · ${COURSE.length} modules · ${totalLessons} lessons · about ${hours} hours. New to electronics? Do Foundations first; after that, follow the branches in any order you like.</p>
-  <div class="bar"><div style="width:${pct()}%"></div></div>
-  <p class="muted small">${doneLessons()} of ${totalLessons} lessons done · ${COURSE.filter(quizPassed).length} of ${COURSE.length} quizzes passed</p>
+  <span class="eyebrow">The complete learning map</span>
+  <h1>Electronics, organised for progress.</h1>
+  <p>Follow the recommended sequence or jump into a topic you already know. Each track contains structured modules, lessons and a knowledge check.</p>
+  <div class="curriculum-summary">
+    <div><b>${TRACKS.length}</b><span>tracks</span></div><div><b>${COURSE.length}</b><span>modules</span></div><div><b>${totalLessons}</b><span>lessons</span></div><div><b>${hours}h</b><span>estimated study time</span></div>
+  </div>
+  <div class="curriculum-progress"><div class="curriculum-progress-head"><b>Your course progress</b><span>${pct()}% complete</span></div><div class="bar"><div style="width:${pct()}%"></div></div><p class="muted small">${doneLessons()} of ${totalLessons} lessons completed · ${COURSE.filter(quizPassed).length} of ${COURSE.length} module quizzes passed</p></div>
 </section>
-<div class="tracks">
-  ${TRACKS.map((t, i) => `
-  <section class="track-row">
-    <div class="track-head">
-      <span class="n">${String(i + 1).padStart(2, "0")}</span>
-      <div><h2><a href="#/track/${t.id}">${t.title}</a></h2><p>${t.tagline}</p></div>
-    </div>
-    <ol class="track-mods">
-      ${trackMods(t).map((m) => `<li class="${quizPassed(m) ? "done" : ""}"><a href="#/learn/${m.id}"><span class="chk"></span><span class="t">${m.title}</span><span class="lvl">${m.level}</span><small>${modDone(m)}/${m.lessons.length}</small></a></li>`).join("")}
-    </ol>
-  </section>`).join("")}
+<div class="curriculum-stages">
+  ${stages.map((stage) => {
+    const tracks = stage.ids.map((id) => TRACKS.find((t) => t.id === id)).filter(Boolean);
+    return `<section class="curriculum-stage"><header><div><span class="eyebrow">Learning stage</span><h2>${stage.title}</h2><p>${stage.intro}</p></div><span class="stage-count">${tracks.length} track${tracks.length === 1 ? "" : "s"}</span></header><div class="curriculum-track-list">${tracks.map((t) => {
+      const mods = trackMods(t), total = trackLessons(t), done = trackDone(t);
+      return `<article class="curriculum-track"><div class="curriculum-track-main"><span class="track-index">${String(TRACKS.indexOf(t)+1).padStart(2,"0")}</span><div><h3><a href="#/track/${t.id}">${t.title}</a></h3><p>${t.tagline}</p><div class="track-meta"><span>${mods.length} modules</span><span>${total} lessons</span><span>${done} completed</span></div></div></div><div class="curriculum-track-side"><div class="track-progress"><i style="width:${total ? done/total*100 : 0}%"></i></div><a class="btn ghost small" href="#/track/${t.id}">View track <span aria-hidden="true">→</span></a></div></article>`;
+    }).join("")}</div></section>`;
+  }).join("")}
 </div>`;
   }
 
@@ -361,7 +413,7 @@
       <p class="muted small">Try each problem on paper first, then open the worked solution.</p>
       ${pr.map((x, i) => `<details class="prob"><summary><span class="qn">Q${i + 1}</span><span>${x.q}</span></summary><div class="sol"><span class="eyebrow">Worked solution</span><div>${x.a}</div></div></details>`).join("")}
     </section>` : ""}
-    ${rc ? `<section class="recap"><div class="recap-head">Recap</div><ol>${rc.recap.map((r) => `<li>${r}</li>`).join("")}</ol></section>` : ""}
+    ${rc ? `<section class="recap recap-sprint" data-recap-key="${m.id}/${l.id}"><div class="recap-sprint-top"><div><span class="eyebrow">Active recall · +15 XP</span><div class="recap-head">Recap sprint</div><p>Try to recall each idea, then reveal it. Complete the sprint to earn XP.</p></div><span class="recap-score">${state.recaps[m.id + "/" + l.id] ? "Complete" : "Ready"}</span></div><ol>${rc.recap.map((r) => `<li><details><summary>Recall this idea</summary><p>${r}</p></details></li>`).join("")}</ol><label class="recall-check"><input type="checkbox" data-recall-attempt="${m.id}/${l.id}" ${state.recaps[m.id + "/" + l.id] ? "checked disabled" : ""}> I tried to recall the ideas before revealing the answers.</label><button class="btn primary small" type="button" data-recap-complete="${m.id}/${l.id}" disabled>${state.recaps[m.id + "/" + l.id] ? "Sprint completed ✓" : "Mark sprint complete · +15 XP"}</button></section>` : ""}
     <nav class="pager" aria-label="Lesson navigation">
       ${prev ? `<a class="pg prev" href="${prev[0]}"><small>← Previous</small><b>${prev[1]}</b></a>` : "<span></span>"}
       <a class="pg next" href="${next}" data-complete="${m.id}/${l.id}"><small>Next →</small><b>${nextLabel}</b></a>
@@ -631,7 +683,7 @@
     return `
 ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><p>This link checks an OpenCircuit Academy certificate. The result appears below.</p></section>` : `<section class="page-head narrow">
   <h1>Your certificate</h1>
-  <p>Pass all ${COURSE.length} module quizzes (80% or more) and your certificate of completion is generated automatically, with a unique ID anyone can verify.</p>
+  <p>Pass all ${COURSE.length} module quizzes (80% or more) to generate a browser-only completion record. It is self-issued, not accredited, and not backed by a central record. The ID check only matches the supplied name and date; it does not verify identity or quiz history.</p>
 </section>`}
 <div class="narrow">
   ${verifyOnly ? "" : ok ? `
@@ -651,13 +703,13 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
   </div>`}
   <div class="verify">
     <h3>Verify a certificate</h3>
-    <p class="muted small">Enter the name and completion date printed on a certificate to check that its ID is genuine.</p>
+    <p class="muted small">Check whether the ID matches the supplied name and date. This local check does not confirm identity or a central completion record.</p>
     <div class="w-grid three">
       <label class="ctl num"><span>Name</span><input id="vname" type="text"></label>
       <label class="ctl num"><span>Date (YYYY-MM-DD)</span><input id="vdate" type="date"></label>
       <label class="ctl num"><span>Certificate ID</span><input id="vid" type="text" placeholder="OC-XXXX-XXXXXX"></label>
     </div>
-    <button class="btn ghost" id="vbtn">Verify</button> <span id="vres" class="vres"></span>
+    <button class="btn ghost" id="vbtn">Verify</button> <span id="vres" class="vres" role="status" aria-live="polite"></span>
   </div>
 </div>`;
   }
@@ -695,7 +747,7 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
     ctx.fillStyle = "#ffffff"; ctx.fillText(name, W / 2, 445);
     ctx.strokeStyle = "#f0a36b"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(W / 2 - 360, 475); ctx.lineTo(W / 2 + 360, 475); ctx.stroke();
     ctx.fillStyle = "#cbd5e1"; ctx.font = "28px system-ui, sans-serif";
-    ctx.fillText("has successfully completed all modules and assessments of", W / 2, 535);
+    ctx.fillText("This browser records completion of the modules and assessments in", W / 2, 535);
     ctx.fillStyle = "#ffffff"; ctx.font = "600 38px system-ui, sans-serif";
     ctx.fillText(COURSE_NAME, W / 2, 590);
     ctx.fillStyle = "#94a3b8"; ctx.font = "22px system-ui, sans-serif";
@@ -722,9 +774,9 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
     ctx.fillStyle = "#07231a"; ctx.beginPath(); ctx.arc(sx, sy, 64, 0, 7); ctx.fill();
     ctx.strokeStyle = "#f0a36b"; ctx.lineWidth = 5; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(sx - 40, sy - 6); ctx.lineTo(sx - 24, sy - 6); ctx.lineTo(sx - 16, sy - 26); ctx.lineTo(sx - 4, sy + 14); ctx.lineTo(sx + 8, sy - 26); ctx.lineTo(sx + 20, sy + 14); ctx.lineTo(sx + 26, sy - 6); ctx.lineTo(sx + 40, sy - 6); ctx.stroke();
     ctx.fillStyle = "#f0a36b";
-    ctx.font = "700 16px system-ui"; ctx.fillText("VERIFIED", sx, sy + 34);
+    ctx.font = "700 16px system-ui"; ctx.fillText("SELF-ISSUED", sx, sy + 34);
     ctx.fillStyle = "#94a3b8"; ctx.font = "20px system-ui";
-    ctx.fillText(`Verify at ${SITE_SHORT}  ·  Course by Mathews V Manoj`, W / 2, Hh - 80);
+    ctx.fillText(`Check ID format at ${SITE_SHORT}  ·  Self-issued record`, W / 2, Hh - 80);
     return id;
   }
 
@@ -736,7 +788,7 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
       startTask: "CERTIFICATION_NAME", name: COURSE_NAME, organizationName: "OpenCircuit Academy",
       issueYear: y, issueMonth: String(+mo), certId: id, certUrl: vurl,
     });
-    const post = `I just completed "${COURSE_NAME}" on OpenCircuit Academy, a free interactive electronics course by Mathews V Manoj. It covers basics to Arduino, ESP32, Raspberry Pi, embedded systems and VLSI.\n\nCertificate ID: ${id}\nVerify: ${vurl}\n\nTry it free: ${SITE}\n\n#electronics #arduino #embeddedsystems #ECE`;
+    const post = `I just completed "${COURSE_NAME}" on OpenCircuit Academy, a free interactive electronics course by Mathews V Manoj. It covers basics to Arduino, ESP32, Raspberry Pi, embedded systems and VLSI.\n\nCertificate ID: ${id}\nSelf-issued, non-accredited completion record.\nID format check: ${vurl}\n\nTry it free: ${SITE}\n\n#electronics #arduino #embeddedsystems #ECE`;
     document.getElementById("cshare").innerHTML = `
       <h3>Share your achievement</h3>
       <div class="btn-row">
@@ -744,7 +796,7 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
         <a class="btn ghost" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(SITE)}" target="_blank" rel="noopener">Share on LinkedIn</a>
         <a class="btn ghost" href="https://wa.me/?text=${encodeURIComponent(post)}" target="_blank" rel="noopener">Share on WhatsApp</a>
       </div>
-      <p class="muted small">Suggested post. Copy it, then attach your downloaded certificate image.</p>
+      <p class="muted small">Suggested post. This certificate is self-issued and not an accredited credential. Copy the post, then attach your downloaded image.</p>
       <textarea id="cpost" readonly rows="7">${H.esc(post)}</textarea>
       <div class="btn-row"><button class="btn ghost small copy-txt" type="button" data-copy="${H.esc(post)}">Copy post</button><button class="btn ghost small copy-txt" type="button" data-copy="${H.esc(vurl)}">Copy verify link</button></div>`;
   }
@@ -799,7 +851,7 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
       const res = document.getElementById("vres");
       if (!n || !d || !id) { res.textContent = "Fill in all three fields."; res.className = "vres"; return; }
       const good = certId(n, d) === id;
-      res.textContent = good ? "✅ Genuine — this ID matches the name and date." : "❌ No match. Check the spelling of the name, the date and the ID.";
+      res.textContent = good ? "ID matches this name and date. This does not verify identity or course records." : "No match. Check the spelling of the name, date and ID.";
       res.className = "vres " + (good ? "ok" : "bad");
     });
   }
@@ -872,11 +924,18 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
   }
 
   /* ---------------- Global events ---------------- */
+  document.addEventListener("change", (e) => {
+    const attempt = e.target.closest("[data-recall-attempt]");
+    if (attempt) { const button = attempt.closest(".recap-sprint").querySelector("[data-recap-complete]"); if (button) button.disabled = !attempt.checked; }
+  });
+
   document.addEventListener("click", (e) => {
     if (e.target.closest("[data-open-map]")) document.body.classList.add("map-open");
     if (e.target.closest("[data-close-map]") || e.target.closest(".side a") || e.target.classList.contains("map-scrim")) document.body.classList.remove("map-open");
     const jump = e.target.closest("[data-jump]");
     if (jump) { e.preventDefault(); const el = document.getElementById(jump.dataset.jump); if (el) el.scrollIntoView({ behavior: "smooth" }); }
+    const recapComplete = e.target.closest("[data-recap-complete]");
+    if (recapComplete && !state.recaps[recapComplete.dataset.recapComplete] && recapComplete.closest(".recap-sprint").querySelector("[data-recall-attempt]").checked) { state.recaps[recapComplete.dataset.recapComplete] = true; save(); recapComplete.disabled = true; recapComplete.textContent = "Sprint completed ✓"; recapComplete.closest(".recap-sprint").querySelector(".recap-score").textContent = "Complete"; confetti(); }
     const done = e.target.closest("[data-complete]");
     if (done) { state.lessons[done.dataset.complete] = true; save(); }
     const ct = e.target.closest(".copy-txt");
@@ -930,7 +989,7 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
       return;
     }
     clearTimeout(resetArmed); resetArmed = null;
-    state = { lessons: {}, quiz: {}, name: "" }; save(); render();
+    state = { lessons: {}, quiz: {}, recaps: {}, name: "" }; save(); render();
     resetLink.textContent = "Progress reset";
     setTimeout(() => (resetLink.textContent = "Reset my progress"), 2000);
   });

@@ -143,14 +143,14 @@ ${H.gate(`<p>Ohm's law and power are the foundation of the <b>Networks</b> secti
 <p>Your phone charger is a small box that converts <b>230 V AC → 5 V DC</b>. Inside it: a transformer (or switching circuit), a rectifier (diodes) and a filter (capacitors). By the end of the next module you'll know what every one of those parts does.</p>
 
 <h2>Safety first — always</h2>
-${H.mistake(`<p><b>Never experiment with mains (230 V AC) as a beginner.</b> It can kill. Everything in this course uses safe low voltages: 5 V from USB, 9 V batteries, or 3.3 V boards.</p>`)}
+${H.mistake(`<p><b>Never experiment with mains (230 V AC) as a beginner.</b> It can kill. Course activities use low-voltage supplies, but low voltage does not remove every risk. Follow ratings and lab instructions.</p>`)}
 <ul>
-  <li><b>Short circuits:</b> connecting + directly to − with a wire lets huge current flow. Batteries heat up and can burst.</li>
-  <li><b>Lithium batteries:</b> never puncture, short or overcharge them.</li>
-  <li><b>Capacitors:</b> big ones can store charge after power is off. Discharge before touching.</li>
-  <li><b>Soldering iron:</b> 350 °C. Always return it to its stand.</li>
+  <li><b>Short circuits:</b> connecting + directly to − can cause very high current. Batteries and wires may heat, burn or fail.</li>
+  <li><b>Lithium batteries:</b> use a suitable charger; never puncture, short or overcharge them.</li>
+  <li><b>Capacitors:</b> some retain dangerous energy after power is off. Only inspect or discharge them using an approved procedure.</li>
+  <li><b>Soldering iron:</b> the tip can cause serious burns. Use a stand and follow lab rules.</li>
 </ul>
-${H.key(`<p>It's current through your body that hurts, and voltage is what pushes it. Low voltage (≤ 12 V) can't push enough current through dry skin to harm you — that's why we learn with it.</p>`)}
+${H.key(`<p>Never assume a voltage is harmless. Shock risk depends on the current path, contact conditions, available current and stored energy. Learn with documented, current-limited low-voltage supplies, check component ratings, and follow your instructor's lab rules.</p>`)}
 `,
     },
   ],
