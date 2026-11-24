@@ -1,87 +1,129 @@
 # OpenCircuit Academy
 
-**A free, interactive electronics course: from the electron to the industry, across analog, digital, embedded, VLSI, communication and power electronics.**
+**A free, open learning path for electronics — from absolute beginner to confident builder.**
 
-**[Open the course →](https://mathewsv-manoj.github.io/open-source-electronics-try-/)**
+[**Start learning →**](https://mathewsv-manoj.github.io/open-source-electronics-try-/) · [**Read the learning syllabus →**](docs/electronics-syllabus.md) · [**Contribute →**](CONTRIBUTING.md)
 
 ![OpenCircuit Academy home page](docs/screenshots/home.png)
 
-Every idea is explained in plain words with an everyday comparison. Small simulators run right on the page, so you learn by trying things. When you finish, you get a certificate you can add to LinkedIn. No sign-up, no install, no cost.
+OpenCircuit Academy helps learners move from *understanding a concept* to *using it in a circuit or project*. It is designed for self-learners, school and college students, makers, and anyone curious about electronics. You do not need prior electronics knowledge to begin.
+
+The learning sequence is deliberate: build foundations first, learn components and circuits, then choose a pathway such as embedded systems, VLSI, communication, analog design or power electronics. Each pathway connects theory with worked examples, interactive experiments, practice and projects.
+
+## Start from zero — or choose a pathway
+
+1. **Start here:** Foundations — charge, voltage, current, resistance, components and basic circuits.
+2. **Build core skills:** Analog and Digital Electronics — semiconductors, transistors, amplifiers, logic, sequential circuits and conversion.
+3. **Choose a specialisation:** Embedded Systems, VLSI & Chip Design, Communication Systems or Power Electronics.
+4. **Build and demonstrate:** Complete practical projects, document your work and explore the Industry & Careers branch.
+
+The detailed [curriculum and suggested study sequence](docs/electronics-syllabus.md) includes prerequisites, learning outcomes, a suggested 24-week pace, project milestones and self-assessment checkpoints. The course is a learning resource, not an accredited qualification or a substitute for supervised laboratory safety training.
 
 ## What's inside
 
-The course is organised into **8 branches of electronics**. Each one goes from beginner to advanced and ends with how that field works in industry: typical roles and the tools engineers use.
+The course is organised into **8 learning branches**:
 
-| # | Branch | Modules |
-|---|--------|---------|
-| 1 | Foundations | What is electricity? · Components · Building circuits |
-| 2 | Analog Electronics | Semiconductors & transistors · Power supplies, amplifiers, filters, oscillators |
-| 3 | Digital Electronics | Binary & logic · Counters, state machines, memory, ADC/DAC, FPGAs |
-| 4 | Embedded Systems | Arduino · Registers, interrupts, UART/I²C/SPI, RTOS · ESP32 & Raspberry Pi |
-| 5 | VLSI & Chip Design | CMOS & first Verilog · RTL rules, timing, verification, physical design |
-| 6 | Communication Systems | Signals, noise, AM/FM · Sampling, PCM, digital modulation, coding · Antennas, link budgets, 5G, satellites, radar |
-| 7 | Power Electronics | Switching converters, inverters, motor drives, EVs, solar |
-| 8 | Industry & Careers | Product lifecycle, PCB design, testing & certification, careers roadmap |
+| Branch | What you will learn |
+|---|---|
+| Foundations | Electricity, components and circuit fundamentals |
+| Analog Electronics | Semiconductor devices, amplifiers, filters and oscillators |
+| Digital Electronics | Number systems, logic, sequential circuits, ADC/DAC and FPGAs |
+| Embedded Systems | Arduino, C/C++, microcontrollers, interfaces and development boards |
+| VLSI & Chip Design | CMOS, Verilog, RTL design, verification and physical-design concepts |
+| Communication Systems | Signals, modulation, digital communication, wireless, antennas and radar |
+| Power Electronics | Converters, inverters, motor drives, batteries and renewable energy |
+| Industry & Careers | PCB design, product development, testing, careers and engineering workflows |
 
-17 modules and 74 lessons in all, with 22 simulators, 148 worked practice problems, a summary and recap for every lesson, a quiz for every module, "For GATE" notes, and a searchable glossary.
-
-Each branch page adds what you'll be able to do, prerequisites, a day in the job, interview topics, standard textbooks and free resources. Site-wide search (press <kbd>/</kbd>), breadcrumbs and a course map make it easy to find your way around.
+The current course catalogue contains 17 modules. The repository also includes lesson recaps, practice material, quizzes, GATE-oriented notes, a searchable glossary and interactive browser-based simulators. Counts can change as community contributions are reviewed; the live course is the source of truth.
 
 ![A logic gate simulator inside a lesson](docs/screenshots/simulator.png)
 
-## 43 projects in four categories
+## Learn by doing: projects and experiments
 
-Every project includes the parts, connections and code (or the lab procedure), plus a challenge.
+Projects connect the lesson to a practical outcome. The current collection spans:
 
-- **Microcontroller (21):** Arduino, ESP32, Raspberry Pi Pico and Raspberry Pi — from a traffic light to face detection
-- **VLSI (5):** Verilog ALU, traffic-light FSM, UART transmitter, PWM generator, 7-segment counter — each with a self-checking testbench
-- **Simulation (7):** AM, FFT spectrum analyser, BPSK bit error rate, 16-QAM, FIR filter (Python); RC filter and bridge rectifier (SPICE)
-- **Lab (10):** rectifiers, Zener regulator, clippers and clampers, CE amplifier, op-amp amplifiers, RC oscillator, logic ICs, decade counter, 555 flasher, dark sensor
+- **Microcontroller projects:** Arduino, ESP32, Raspberry Pi Pico and Raspberry Pi.
+- **VLSI projects:** Verilog designs with testbench-oriented workflows.
+- **Simulation projects:** signal processing, modulation and circuit simulation.
+- **Lab exercises:** rectifiers, regulators, amplifiers, oscillators, logic ICs and 555 timer circuits.
 
 ![The projects page](docs/screenshots/projects.png)
 
-## Certificate
+Before building hardware, check component ratings, power limits, wiring and datasheets. Mains-voltage and high-energy experiments must only be performed with qualified supervision and appropriate lab facilities.
 
-Pass every module quiz (80% or more) and a certificate with a unique ID is generated in the browser. From there you can:
+## A practical study method
 
-- download it as an image,
-- add it to your LinkedIn profile's *Licenses & certifications* in one click,
-- share a ready-written post on LinkedIn or WhatsApp,
-- copy a verify link (`#/verify/<id>/<date>/<name>`) that anyone can open to check it.
+For each topic, follow this loop:
+
+1. **Understand:** Read the explanation and identify the key principle.
+2. **Work through:** Reproduce the example and calculate the expected result.
+3. **Experiment:** Change one simulator parameter at a time and observe the effect.
+4. **Practise:** Attempt questions without looking at the solution first.
+5. **Build:** Complete a related mini-project or lab exercise.
+6. **Explain:** Write a short note or teach the concept to someone else.
+
+Use the progress indicator to continue where you left off. Progress is stored locally in your browser; clearing browser storage may erase it.
+
+## Quizzes and completion certificate
+
+Module quizzes are intended as self-checks. The current site generates a browser-side completion certificate after the required quiz results are achieved.
+
+**Important:** This is a self-issued record of course completion. It is not an accredited academic credential, professional certification or externally verified assessment. Certificate data is generated in the learner's browser and is not backed by a central verification service.
 
 ![Sample certificate](docs/screenshots/certificate.png)
 
-Progress is saved in your browser. There are no accounts and no server.
+## Open source means you can help shape it
 
-## Run it locally
+We want learners, educators and makers to improve this resource together. You can contribute by:
 
-It's a static site with no build step:
+- correcting an explanation, formula, diagram or worked solution;
+- adding a beginner-friendly lesson with prerequisites and learning outcomes;
+- creating a simulator or improving an existing one;
+- adding a tested project with a bill of materials, wiring, code and safety notes;
+- writing quiz questions with explanations for every answer;
+- improving accessibility, mobile usability, documentation or translations.
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Beginner-friendly starter tasks are welcome. If you are unsure where to begin, open an issue describing the topic or improvement you want to work on.
+
+## Run locally
+
+This is a static site and does not require a build step:
 
 ```bash
+git clone https://github.com/MathewsV-Manoj/open-source-electronics-try-.git
+cd open-source-electronics-try-
 python3 -m http.server 8000
-# open http://localhost:8000
 ```
 
-### Publish on GitHub Pages
+Open http://localhost:8000 in your browser.
 
-In **Settings → Pages**, choose **Deploy from a branch**, select the branch and the `/ (root)` folder, and save.
+### Where content lives
 
-## Add or edit content
+- Lessons and module quizzes: `assets/js/content/NN-*.js`
+- Shared lesson helpers: `assets/js/core.js`
+- Interactive simulators: `assets/js/widgets.js`
+- Learning branches: `assets/js/content/tracks.js` and `tracks-depth.js`
+- Practice questions: `assets/js/content/practice.js`
+- Projects: `assets/js/content/projects.js` and `projects-more.js`
+- Lesson recaps: `assets/js/content/recaps.js` and `recaps-more.js`
+- Curriculum guide: `docs/electronics-syllabus.md`
 
-- Lessons live in `assets/js/content/NN-*.js`. Each file adds one module (lessons + quiz) to `COURSE`.
-- Helpers in `assets/js/core.js` (`H.analogy`, `H.key`, `H.mistake`, `H.gate`, `H.fact`, `H.code`, `H.widget`, `H.formula`, `H.table`, `H.steps`) keep lesson markup short.
-- Simulators are in `assets/js/widgets.js`. Place one in a lesson with `H.widget("name", "Title")`.
-- Branches are in `assets/js/content/tracks.js`, with their depth (outcomes, interviews, books) in `tracks-depth.js`.
-- Practice problems are in `assets/js/content/practice.js`; project troubleshooting and related lessons are in `project-depth.js`.
-- Lesson summaries and recaps are in `assets/js/content/recaps.js` and `recaps-more.js`.
-- Projects are in `assets/js/content/projects.js` (microcontroller) and `projects-more.js` (lab, VLSI, simulation); the glossary is in `projects.js`.
-- The link-preview image is `assets/og-image.png` (1200 × 630).
+## Project principles
 
-Found a mistake or want to add a lesson or project? Open an issue or a pull request.
+- **Beginner-first:** define terms before using them; explain the physical intuition before the mathematics.
+- **Accurate:** use standard symbols and SI units, show assumptions and check worked answers.
+- **Practical:** connect concepts to simulations, measurements, datasheets and projects.
+- **Accessible:** keep the core learning experience free and usable on ordinary devices.
+- **Collaborative:** welcome constructive contributions and give contributors clear credit.
+- **Safe:** flag hazardous experiments and never encourage unsupervised work with dangerous voltages or stored energy.
 
-## Author
+## Maintainer
 
-Created by **Mathews V Manoj**, Electronics & Communication Engineering student at Muthoot Institute of Technology and Science (KTU), Kerala. Aspiring GATE candidate and defence-tech entrepreneur.
+Created by **Mathews V Manoj**, Electronics & Communication Engineering student at Muthoot Institute of Technology and Science, Kerala.
 
-- LinkedIn: [linkedin.com/in/mathews-v-manoj](https://www.linkedin.com/in/mathews-v-manoj)
-- Email: mathewvmanoj8@gmail.com
+- GitHub: [@MathewsV-Manoj](https://github.com/MathewsV-Manoj)
+- LinkedIn: [Mathews V Manoj](https://www.linkedin.com/in/mathews-v-manoj)
+
+## Licence
+
+This project is distributed under the MIT License. See [LICENSE](LICENSE). Third-party assets and references retain their respective licences and attribution requirements.
