@@ -179,3 +179,14 @@ body { font-size: 16px; line-height: 1.65; }
 
 .skip-link { position: fixed; z-index: 120; top: .5rem; left: .5rem; transform: translateY(-160%); padding: .55rem .8rem; border-radius: 8px; background: var(--fg); color: var(--bg); font-weight: 700; }
 .skip-link:focus { transform: translateY(0); }
+
+
+/* Gamified learning layer */
+.learner-rank{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.8rem;margin:.95rem 0 1.1rem;padding:.8rem;border:1px solid var(--line);border-radius:12px;background:var(--surface2)}
+.rank-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:12px;background:var(--fg);color:var(--bg);font:700 .72rem var(--mono)}
+.rank-copy b,.rank-copy span{display:block}.rank-copy b{font-size:.88rem}.rank-copy span{margin:.12rem 0 .35rem;color:var(--muted);font:500 .68rem var(--mono)}
+.rank-bar{height:5px;overflow:hidden;border-radius:99px;background:var(--line)}.rank-bar i{display:block;height:100%;background:var(--accent);border-radius:inherit}
+.rank-badges{text-align:center}.rank-badges b{display:block;font:700 1.15rem var(--mono)}.rank-badges span{color:var(--muted);font-size:.68rem}
+.recap-sprint{padding:1.2rem;border:1px solid var(--line);border-radius:15px;background:var(--surface)}.recap-sprint-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}.recap-sprint-top p{margin:.2rem 0 .8rem;color:var(--muted);font-size:.9rem}.recap-sprint .recap-head{font:700 1.35rem var(--head)}.recap-score{flex:none;padding:.35rem .6rem;border:1px solid var(--line);border-radius:999px;font:700 .8rem var(--mono)}
+.recap-sprint ol{display:grid;gap:.5rem;padding-left:1.3rem}.recap-sprint li{padding:.55rem .7rem;border:1px solid var(--line);border-radius:9px;background:var(--surface2)}.recap-sprint details p{margin:.55rem 0 .1rem}.recap-sprint summary{cursor:pointer;font-weight:650}.recap-sprint button{margin-top:.8rem}
+@media(max-width:600px){.learner-rank{gap:.55rem;padding:.65rem}.rank-mark{width:42px;height:42px}}
