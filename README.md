@@ -51,6 +51,31 @@ Projects connect the lesson to a practical outcome. The current collection spans
 
 Before building hardware, check component ratings, power limits, wiring and datasheets. Mains-voltage and high-energy experiments must only be performed with qualified supervision and appropriate lab facilities.
 
+## Go deeper: specialisation roadmaps
+
+Once you have the fundamentals, use the pathway guides to plan a focused learning sprint:
+
+| Pathway | Focus |
+|---|---|
+| [Embedded systems](docs/specialisation-roadmaps.md#1-embedded-systems-and-firmware) | C, microcontrollers, peripherals, RTOS and firmware debugging |
+| [VLSI and RTL](docs/specialisation-roadmaps.md#2-vlsi-rtl-design-and-verification) | Verilog, testbenches, timing, synthesis and verification |
+| [DSP and communication](docs/specialisation-roadmaps.md#3-dsp-and-digital-communication) | Sampling, FFT, filters, modulation and BER |
+| [RF and antennas](docs/specialisation-roadmaps.md#4-rf-antennas-and-wireless-systems) | Transmission lines, S-parameters, antennas and link budgets |
+| [PCB and hardware](docs/specialisation-roadmaps.md#5-pcb-design-and-hardware-engineering) | KiCad, component selection, layout, fabrication and bring-up |
+| [Power electronics](docs/specialisation-roadmaps.md#6-power-electronics-and-motor-control) | Converters, switching devices, motor control and protection |
+
+These guides include prerequisites, a suggested topic sequence, tools, portfolio projects, evidence to publish and common mistakes.
+
+## Build projects that others can reproduce
+
+A working prototype is only one part of an engineering project. Good documentation should let another learner understand the requirements, identify the parts, reproduce the setup and verify the results.
+
+Use the [Electronics Project Handbook](docs/project-handbook.md) for requirements, block diagrams, BOMs, staged bring-up, test plans, troubleshooting, measurement records, safety checks and a reusable project report template.
+
+## Recommended technical resources
+
+The [Resource Library](docs/resource-library.md) links to official documentation for circuit simulation, embedded development, digital design, DSP, RF, component datasheets, PCB design and Git/GitHub. Prefer datasheets and official tool documentation when checking pinouts, ratings, commands and version-specific behaviour.
+
 ## A practical study method
 
 For each topic, follow this loop:

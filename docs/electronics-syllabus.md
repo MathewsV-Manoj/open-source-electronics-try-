@@ -200,6 +200,21 @@ Topics:
 
 **Capstone checkpoint:** Build or simulate a complete small system, publish its schematic/code, list the BOM, document test results and explain limitations.
 
+## Choose a deeper specialisation
+
+After the shared foundation, use the dedicated [ECE specialisation roadmaps](specialisation-roadmaps.md) to plan a focused learning sequence in:
+
+- Embedded systems and firmware.
+- VLSI, RTL design and verification.
+- DSP and digital communication.
+- RF, antennas and wireless systems.
+- PCB design and hardware engineering.
+- Power electronics and motor control.
+
+Each roadmap lists prerequisites, a topic sequence, suggested tools, portfolio projects and common mistakes. You do not need to study every branch at once; choose based on your interests and the fundamentals you have already mastered.
+
+For project planning and reproducible documentation, use the [Electronics Project Handbook](project-handbook.md). For official tool documentation and datasheet starting points, see the [Electronics Resource Library](resource-library.md).
+
 ## Suggested 24-week study plan
 
 This is a pacing suggestion, not a promise of mastery. A learner studying 5–7 focused hours per week may need longer depending on maths background and practical access.
