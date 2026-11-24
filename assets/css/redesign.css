@@ -192,3 +192,11 @@ body { font-size: 16px; line-height: 1.65; }
 @media(max-width:600px){.learner-rank{gap:.55rem;padding:.65rem}.rank-mark{width:42px;height:42px}}
 
 .rank-achievements{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.35rem}.rank-achievements span{padding:.25rem .45rem;border:1px solid var(--line);border-radius:999px;font-size:.68rem}.rank-achievements .earned{border-color:var(--accent);color:var(--fg);font-weight:700}.rank-achievements .locked{color:var(--muted);opacity:.7}
+
+.recall-check { display: flex; align-items: flex-start; gap: .55rem; margin-top: .8rem; color: var(--muted); font-size: .9rem; }
+.recall-check input { width: 1.1rem; height: 1.1rem; margin: .1rem 0 0; accent-color: var(--accent); flex: none; }
+.recap-sprint button:disabled { cursor: not-allowed; opacity: .55; }
+:root { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

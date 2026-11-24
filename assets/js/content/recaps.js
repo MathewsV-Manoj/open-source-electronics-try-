@@ -14,7 +14,7 @@ window.RECAPS = {
     recap: ["V = I × R; rearrange with the triangle to find any one of the three.", "Power P = V × I tells you how hard a part is working.", "Always check that a part's power rating is above what it will dissipate."],
   },
   "basics/acdc": {
-    idea: "DC flows one way steadily; AC keeps reversing — and low-voltage DC is what we safely learn with.",
+    idea: "DC flows one way steadily; AC reverses direction — use documented, current-limited low-voltage supplies and follow lab rules.",
     recap: ["Batteries and USB give DC; the wall socket gives 230 V, 50 Hz AC.", "Chargers convert AC to low-voltage DC.", "Never experiment with mains as a beginner, and avoid short circuits."],
   },
   "components/resistors": {

@@ -16,7 +16,24 @@
       try { localStorage.setItem(STORE, JSON.stringify(d)); } catch { /* storage unavailable: progress lasts this visit only */ }
     },
   };
-  let state = Object.assign({ lessons: {}, quiz: {}, recaps: {}, name: "" }, store.load());
+  function restoreProgress(raw) {
+    const clean = { lessons: {}, quiz: {}, recaps: {}, name: "" };
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return clean;
+    const lessons = new Set(COURSE.flatMap((m) => m.lessons.map((l) => m.id + "/" + l.id)));
+    for (const key of lessons) if (raw.lessons && raw.lessons[key] === true) clean.lessons[key] = true;
+    for (const m of COURSE) {
+      const saved = raw.quiz && raw.quiz[m.id];
+      if (!saved || typeof saved !== "object") continue;
+      const best = Number.isInteger(saved.best) ? Math.max(0, Math.min(m.quiz.length, saved.best)) : 0;
+      const validDate = typeof saved.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(saved.date);
+      const passed = saved.passed === true && best >= Math.ceil(m.quiz.length * PASS) && validDate;
+      if (best || passed) clean.quiz[m.id] = { best, passed, date: passed ? saved.date : null };
+    }
+    for (const key of Object.keys(RECAPS || {})) if (raw.recaps && raw.recaps[key] === true) clean.recaps[key] = true;
+    clean.name = typeof raw.name === "string" ? raw.name.trim().slice(0, 48) : "";
+    return clean;
+  }
+  let state = restoreProgress(store.load());
   const save = () => { store.save(state); updateHeader(); };
 
   // Order modules by branch so "next module" follows the learning path.
@@ -396,7 +413,7 @@
       <p class="muted small">Try each problem on paper first, then open the worked solution.</p>
       ${pr.map((x, i) => `<details class="prob"><summary><span class="qn">Q${i + 1}</span><span>${x.q}</span></summary><div class="sol"><span class="eyebrow">Worked solution</span><div>${x.a}</div></div></details>`).join("")}
     </section>` : ""}
-    ${rc ? `<section class="recap recap-sprint" data-recap-key="${m.id}/${l.id}"><div class="recap-sprint-top"><div><span class="eyebrow">Active recall · +15 XP</span><div class="recap-head">Recap sprint</div><p>Try to recall each idea, then reveal it. Complete the sprint to earn XP.</p></div><span class="recap-score">${state.recaps[m.id + "/" + l.id] ? "Complete" : "Ready"}</span></div><ol>${rc.recap.map((r) => `<li><details><summary>Recall this idea</summary><p>${r}</p></details></li>`).join("")}</ol><button class="btn primary small" type="button" data-recap-complete="${m.id}/${l.id}" ${state.recaps[m.id + "/" + l.id] ? "disabled" : ""}>${state.recaps[m.id + "/" + l.id] ? "Sprint completed ✓" : "Mark sprint complete · +15 XP"}</button></section>` : ""}
+    ${rc ? `<section class="recap recap-sprint" data-recap-key="${m.id}/${l.id}"><div class="recap-sprint-top"><div><span class="eyebrow">Active recall · +15 XP</span><div class="recap-head">Recap sprint</div><p>Try to recall each idea, then reveal it. Complete the sprint to earn XP.</p></div><span class="recap-score">${state.recaps[m.id + "/" + l.id] ? "Complete" : "Ready"}</span></div><ol>${rc.recap.map((r) => `<li><details><summary>Recall this idea</summary><p>${r}</p></details></li>`).join("")}</ol><label class="recall-check"><input type="checkbox" data-recall-attempt="${m.id}/${l.id}" ${state.recaps[m.id + "/" + l.id] ? "checked disabled" : ""}> I tried to recall the ideas before revealing the answers.</label><button class="btn primary small" type="button" data-recap-complete="${m.id}/${l.id}" disabled>${state.recaps[m.id + "/" + l.id] ? "Sprint completed ✓" : "Mark sprint complete · +15 XP"}</button></section>` : ""}
     <nav class="pager" aria-label="Lesson navigation">
       ${prev ? `<a class="pg prev" href="${prev[0]}"><small>← Previous</small><b>${prev[1]}</b></a>` : "<span></span>"}
       <a class="pg next" href="${next}" data-complete="${m.id}/${l.id}"><small>Next →</small><b>${nextLabel}</b></a>
@@ -666,7 +683,7 @@
     return `
 ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><p>This link checks an OpenCircuit Academy certificate. The result appears below.</p></section>` : `<section class="page-head narrow">
   <h1>Your certificate</h1>
-  <p>Pass all ${COURSE.length} module quizzes (80% or more) and your certificate of completion is generated automatically, with a unique ID anyone can verify.</p>
+  <p>Pass all ${COURSE.length} module quizzes (80% or more) to generate a browser-only completion record. It is self-issued, not accredited, and not backed by a central record. The ID check only matches the supplied name and date; it does not verify identity or quiz history.</p>
 </section>`}
 <div class="narrow">
   ${verifyOnly ? "" : ok ? `
@@ -686,13 +703,13 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
   </div>`}
   <div class="verify">
     <h3>Verify a certificate</h3>
-    <p class="muted small">Enter the name and completion date printed on a certificate to check that its ID is genuine.</p>
+    <p class="muted small">Check whether the ID matches the supplied name and date. This local check does not confirm identity or a central completion record.</p>
     <div class="w-grid three">
       <label class="ctl num"><span>Name</span><input id="vname" type="text"></label>
       <label class="ctl num"><span>Date (YYYY-MM-DD)</span><input id="vdate" type="date"></label>
       <label class="ctl num"><span>Certificate ID</span><input id="vid" type="text" placeholder="OC-XXXX-XXXXXX"></label>
     </div>
-    <button class="btn ghost" id="vbtn">Verify</button> <span id="vres" class="vres"></span>
+    <button class="btn ghost" id="vbtn">Verify</button> <span id="vres" class="vres" role="status" aria-live="polite"></span>
   </div>
 </div>`;
   }
@@ -730,7 +747,7 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
     ctx.fillStyle = "#ffffff"; ctx.fillText(name, W / 2, 445);
     ctx.strokeStyle = "#f0a36b"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(W / 2 - 360, 475); ctx.lineTo(W / 2 + 360, 475); ctx.stroke();
     ctx.fillStyle = "#cbd5e1"; ctx.font = "28px system-ui, sans-serif";
-    ctx.fillText("has successfully completed all modules and assessments of", W / 2, 535);
+    ctx.fillText("This browser records completion of the modules and assessments in", W / 2, 535);
     ctx.fillStyle = "#ffffff"; ctx.font = "600 38px system-ui, sans-serif";
     ctx.fillText(COURSE_NAME, W / 2, 590);
     ctx.fillStyle = "#94a3b8"; ctx.font = "22px system-ui, sans-serif";
@@ -757,9 +774,9 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
     ctx.fillStyle = "#07231a"; ctx.beginPath(); ctx.arc(sx, sy, 64, 0, 7); ctx.fill();
     ctx.strokeStyle = "#f0a36b"; ctx.lineWidth = 5; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(sx - 40, sy - 6); ctx.lineTo(sx - 24, sy - 6); ctx.lineTo(sx - 16, sy - 26); ctx.lineTo(sx - 4, sy + 14); ctx.lineTo(sx + 8, sy - 26); ctx.lineTo(sx + 20, sy + 14); ctx.lineTo(sx + 26, sy - 6); ctx.lineTo(sx + 40, sy - 6); ctx.stroke();
     ctx.fillStyle = "#f0a36b";
-    ctx.font = "700 16px system-ui"; ctx.fillText("VERIFIED", sx, sy + 34);
+    ctx.font = "700 16px system-ui"; ctx.fillText("SELF-ISSUED", sx, sy + 34);
     ctx.fillStyle = "#94a3b8"; ctx.font = "20px system-ui";
-    ctx.fillText(`Verify at ${SITE_SHORT}  ·  Course by Mathews V Manoj`, W / 2, Hh - 80);
+    ctx.fillText(`Check ID format at ${SITE_SHORT}  ·  Self-issued record`, W / 2, Hh - 80);
     return id;
   }
 
@@ -771,7 +788,7 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
       startTask: "CERTIFICATION_NAME", name: COURSE_NAME, organizationName: "OpenCircuit Academy",
       issueYear: y, issueMonth: String(+mo), certId: id, certUrl: vurl,
     });
-    const post = `I just completed "${COURSE_NAME}" on OpenCircuit Academy, a free interactive electronics course by Mathews V Manoj. It covers basics to Arduino, ESP32, Raspberry Pi, embedded systems and VLSI.\n\nCertificate ID: ${id}\nVerify: ${vurl}\n\nTry it free: ${SITE}\n\n#electronics #arduino #embeddedsystems #ECE`;
+    const post = `I just completed "${COURSE_NAME}" on OpenCircuit Academy, a free interactive electronics course by Mathews V Manoj. It covers basics to Arduino, ESP32, Raspberry Pi, embedded systems and VLSI.\n\nCertificate ID: ${id}\nSelf-issued, non-accredited completion record.\nID format check: ${vurl}\n\nTry it free: ${SITE}\n\n#electronics #arduino #embeddedsystems #ECE`;
     document.getElementById("cshare").innerHTML = `
       <h3>Share your achievement</h3>
       <div class="btn-row">
@@ -779,7 +796,7 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
         <a class="btn ghost" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(SITE)}" target="_blank" rel="noopener">Share on LinkedIn</a>
         <a class="btn ghost" href="https://wa.me/?text=${encodeURIComponent(post)}" target="_blank" rel="noopener">Share on WhatsApp</a>
       </div>
-      <p class="muted small">Suggested post. Copy it, then attach your downloaded certificate image.</p>
+      <p class="muted small">Suggested post. This certificate is self-issued and not an accredited credential. Copy the post, then attach your downloaded image.</p>
       <textarea id="cpost" readonly rows="7">${H.esc(post)}</textarea>
       <div class="btn-row"><button class="btn ghost small copy-txt" type="button" data-copy="${H.esc(post)}">Copy post</button><button class="btn ghost small copy-txt" type="button" data-copy="${H.esc(vurl)}">Copy verify link</button></div>`;
   }
@@ -834,7 +851,7 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
       const res = document.getElementById("vres");
       if (!n || !d || !id) { res.textContent = "Fill in all three fields."; res.className = "vres"; return; }
       const good = certId(n, d) === id;
-      res.textContent = good ? "✅ Genuine — this ID matches the name and date." : "❌ No match. Check the spelling of the name, the date and the ID.";
+      res.textContent = good ? "ID matches this name and date. This does not verify identity or course records." : "No match. Check the spelling of the name, date and ID.";
       res.className = "vres " + (good ? "ok" : "bad");
     });
   }
@@ -907,13 +924,18 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
   }
 
   /* ---------------- Global events ---------------- */
+  document.addEventListener("change", (e) => {
+    const attempt = e.target.closest("[data-recall-attempt]");
+    if (attempt) { const button = attempt.closest(".recap-sprint").querySelector("[data-recap-complete]"); if (button) button.disabled = !attempt.checked; }
+  });
+
   document.addEventListener("click", (e) => {
     if (e.target.closest("[data-open-map]")) document.body.classList.add("map-open");
     if (e.target.closest("[data-close-map]") || e.target.closest(".side a") || e.target.classList.contains("map-scrim")) document.body.classList.remove("map-open");
     const jump = e.target.closest("[data-jump]");
     if (jump) { e.preventDefault(); const el = document.getElementById(jump.dataset.jump); if (el) el.scrollIntoView({ behavior: "smooth" }); }
     const recapComplete = e.target.closest("[data-recap-complete]");
-    if (recapComplete && !state.recaps[recapComplete.dataset.recapComplete]) { state.recaps[recapComplete.dataset.recapComplete] = true; save(); recapComplete.disabled = true; recapComplete.textContent = "Sprint completed ✓"; recapComplete.closest(".recap-sprint").querySelector(".recap-score").textContent = "Complete"; confetti(); }
+    if (recapComplete && !state.recaps[recapComplete.dataset.recapComplete] && recapComplete.closest(".recap-sprint").querySelector("[data-recall-attempt]").checked) { state.recaps[recapComplete.dataset.recapComplete] = true; save(); recapComplete.disabled = true; recapComplete.textContent = "Sprint completed ✓"; recapComplete.closest(".recap-sprint").querySelector(".recap-score").textContent = "Complete"; confetti(); }
     const done = e.target.closest("[data-complete]");
     if (done) { state.lessons[done.dataset.complete] = true; save(); }
     const ct = e.target.closest(".copy-txt");
