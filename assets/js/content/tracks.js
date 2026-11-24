@@ -1,7 +1,7 @@
 /* The branches of electronics. Each branch lists its modules in order,
    from beginner to advanced, plus a short picture of the industry. */
 window.TRACKS = [
-  {
+{
     id: "foundations",
     title: "Foundations",
     tagline: "Electrons, voltage, current, components and circuits. Start here if you're new.",
@@ -14,7 +14,7 @@ window.TRACKS = [
       next: "Go on to Analog or Digital next, then Embedded.",
     },
   },
-  {
+{
     id: "analog",
     title: "Analog Electronics",
     tagline: "Semiconductors, transistors, amplifiers, power supplies, filters and oscillators.",
@@ -27,7 +27,7 @@ window.TRACKS = [
       next: "Pairs naturally with Power Electronics and Communication.",
     },
   },
-  {
+{
     id: "digital",
     title: "Digital Electronics",
     tagline: "Binary, logic gates, flip-flops, counters, state machines, memory and FPGAs.",
@@ -40,7 +40,7 @@ window.TRACKS = [
       next: "Continue into Embedded Systems or VLSI.",
     },
   },
-  {
+{
     id: "embedded",
     title: "Embedded Systems",
     tagline: "Arduino, registers, interrupts, protocols, ESP32, Raspberry Pi Pico and Raspberry Pi.",
@@ -53,20 +53,7 @@ window.TRACKS = [
       next: "Add Communication (for IoT) or Power Electronics (for EVs and drones).",
     },
   },
-  {
-    id: "vlsi",
-    title: "VLSI & Chip Design",
-    tagline: "CMOS, the chip design flow, Verilog, timing, verification and physical design.",
-    what: "VLSI is the design of integrated circuits: billions of transistors on one piece of silicon. Engineers describe hardware in Verilog, verify it exhaustively, and turn it into a layout that a fab can manufacture.",
-    where: ["Processors, GPUs and AI accelerators", "Phone chips (SoCs) and modems", "Automotive and defence chips", "Every microcontroller you program"],
-    modules: ["vlsi", "vlsi2"],
-    industry: {
-      roles: ["RTL design engineer", "Design verification (DV) engineer", "Physical design engineer", "STA engineer", "DFT engineer"],
-      tools: ["Verilog, SystemVerilog, UVM", "Synopsys and Cadence EDA tools", "Open-source: Yosys, OpenROAD, OpenLane", "Linux, Tcl, Python scripting"],
-      next: "Strengthen Digital first; GATE and M.Tech help for many VLSI roles.",
-    },
-  },
-  {
+{
     id: "communication",
     title: "Communication Systems",
     tagline: "Signals, noise, modulation, digital communication, wireless, satellites and radar.",
@@ -79,7 +66,20 @@ window.TRACKS = [
       next: "Pairs with Embedded (for IoT) and VLSI (for modem and RF chips).",
     },
   },
-  {
+{
+    id: "vlsi",
+    title: "VLSI & Chip Design",
+    tagline: "CMOS, the chip design flow, Verilog, timing, verification and physical design.",
+    what: "VLSI is the design of integrated circuits: billions of transistors on one piece of silicon. Engineers describe hardware in Verilog, verify it exhaustively, and turn it into a layout that a fab can manufacture.",
+    where: ["Processors, GPUs and AI accelerators", "Phone chips (SoCs) and modems", "Automotive and defence chips", "Every microcontroller you program"],
+    modules: ["vlsi", "vlsi2"],
+    industry: {
+      roles: ["RTL design engineer", "Design verification (DV) engineer", "Physical design engineer", "STA engineer", "DFT engineer"],
+      tools: ["Verilog, SystemVerilog, UVM", "Synopsys and Cadence EDA tools", "Open-source: Yosys, OpenROAD, OpenLane", "Linux, Tcl, Python scripting"],
+      next: "Strengthen Digital first; GATE and M.Tech help for many VLSI roles.",
+    },
+  },
+{
     id: "power",
     title: "Power Electronics",
     tagline: "Switching converters, inverters, motor drives, batteries, EVs and solar.",
@@ -92,7 +92,7 @@ window.TRACKS = [
       next: "Combine with Embedded Systems for motor control and BMS work.",
     },
   },
-  {
+{
     id: "careers",
     title: "Industry & Careers",
     tagline: "How products are really made, and how to build a career in electronics.",
@@ -104,5 +104,5 @@ window.TRACKS = [
       tools: ["KiCad for PCB design", "Git and GitHub for your portfolio", "LinkedIn for your professional profile"],
       next: "Read this early, and again before internships and placements.",
     },
-  },
+  }
 ];
