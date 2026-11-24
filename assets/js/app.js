@@ -16,7 +16,7 @@
       try { localStorage.setItem(STORE, JSON.stringify(d)); } catch { /* storage unavailable: progress lasts this visit only */ }
     },
   };
-  let state = Object.assign({ lessons: {}, quiz: {}, name: "" }, store.load());
+  let state = Object.assign({ lessons: {}, quiz: {}, recaps: {}, name: "" }, store.load());
   const save = () => { store.save(state); updateHeader(); };
 
   // Order modules by branch so "next module" follows the learning path.
@@ -29,6 +29,11 @@
   const quizPassed = (m) => state.quiz[m.id] && state.quiz[m.id].passed;
   const allPassed = () => COURSE.every(quizPassed);
   const pct = () => Math.round(((doneLessons() + COURSE.filter(quizPassed).length) / (totalLessons + COURSE.length)) * 100);
+  const recapCount = () => Object.values(state.recaps || {}).filter(Boolean).length;
+  const xpTotal = () => doneLessons() * 20 + COURSE.filter(quizPassed).length * 50 + recapCount() * 15;
+  const learnerLevel = () => Math.floor(xpTotal() / 250) + 1;
+  const levelProgress = () => (xpTotal() % 250) / 250 * 100;
+  const learnerBadges = () => [{name:"First steps",earned:doneLessons()>=1},{name:"Recall ready",earned:recapCount()>=1},{name:"Quiz finisher",earned:COURSE.some(quizPassed)},{name:"Consistent builder",earned:doneLessons()>=10}];
 
   function nextStop() {
     for (const m of COURSE) {
@@ -189,6 +194,7 @@
     </div>
     <aside class="learning-panel" aria-label="Your learning overview">
       <div class="learning-panel-top"><span class="panel-kicker">YOUR LEARNING SPACE</span><span class="live-mark">SELF-PACED</span></div>
+      <div class="learner-rank"><div class="rank-mark">LV ${learnerLevel()}</div><div class="rank-copy"><b>Learning level ${learnerLevel()}</b><span>${xpTotal()} XP · ${250 - (xpTotal() % 250)} XP to next level</span><div class="rank-bar"><i style="width:${levelProgress()}%"></i></div></div><div class="rank-badges"><b>${learnerBadges().filter((b) => b.earned).length}</b><span>badges</span></div></div>
       <div class="panel-progress">
         <div><span class="panel-label">Overall progress</span><strong>${pct()}<small>%</small></strong></div>
         <div class="panel-ring" style="--progress:${pct()}"><span>${pct()}%</span></div>
@@ -390,7 +396,7 @@
       <p class="muted small">Try each problem on paper first, then open the worked solution.</p>
       ${pr.map((x, i) => `<details class="prob"><summary><span class="qn">Q${i + 1}</span><span>${x.q}</span></summary><div class="sol"><span class="eyebrow">Worked solution</span><div>${x.a}</div></div></details>`).join("")}
     </section>` : ""}
-    ${rc ? `<section class="recap"><div class="recap-head">Recap</div><ol>${rc.recap.map((r) => `<li>${r}</li>`).join("")}</ol></section>` : ""}
+    ${rc ? `<section class="recap recap-sprint" data-recap-key="${m.id}/${l.id}"><div class="recap-sprint-top"><div><span class="eyebrow">Active recall · +15 XP</span><div class="recap-head">Recap sprint</div><p>Try to recall each idea, then reveal it. Complete the sprint to earn XP.</p></div><span class="recap-score">${state.recaps[m.id + "/" + l.id] ? "Complete" : "Ready"}</span></div><ol>${rc.recap.map((r) => `<li><details><summary>Recall this idea</summary><p>${r}</p></details></li>`).join("")}</ol><button class="btn primary small" type="button" data-recap-complete="${m.id}/${l.id}" ${state.recaps[m.id + "/" + l.id] ? "disabled" : ""}>${state.recaps[m.id + "/" + l.id] ? "Sprint completed ✓" : "Mark sprint complete · +15 XP"}</button></section>` : ""}
     <nav class="pager" aria-label="Lesson navigation">
       ${prev ? `<a class="pg prev" href="${prev[0]}"><small>← Previous</small><b>${prev[1]}</b></a>` : "<span></span>"}
       <a class="pg next" href="${next}" data-complete="${m.id}/${l.id}"><small>Next →</small><b>${nextLabel}</b></a>
@@ -906,6 +912,8 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
     if (e.target.closest("[data-close-map]") || e.target.closest(".side a") || e.target.classList.contains("map-scrim")) document.body.classList.remove("map-open");
     const jump = e.target.closest("[data-jump]");
     if (jump) { e.preventDefault(); const el = document.getElementById(jump.dataset.jump); if (el) el.scrollIntoView({ behavior: "smooth" }); }
+    const recapComplete = e.target.closest("[data-recap-complete]");
+    if (recapComplete && !state.recaps[recapComplete.dataset.recapComplete]) { state.recaps[recapComplete.dataset.recapComplete] = true; save(); recapComplete.disabled = true; recapComplete.textContent = "Sprint completed ✓"; recapComplete.closest(".recap-sprint").querySelector(".recap-score").textContent = "Complete"; }
     const done = e.target.closest("[data-complete]");
     if (done) { state.lessons[done.dataset.complete] = true; save(); }
     const ct = e.target.closest(".copy-txt");
@@ -959,7 +967,7 @@ ${verifyOnly ? `<section class="page-head narrow"><h1>Verify a certificate</h1><
       return;
     }
     clearTimeout(resetArmed); resetArmed = null;
-    state = { lessons: {}, quiz: {}, name: "" }; save(); render();
+    state = { lessons: {}, quiz: {}, recaps: {}, name: "" }; save(); render();
     resetLink.textContent = "Progress reset";
     setTimeout(() => (resetLink.textContent = "Reset my progress"), 2000);
   });
